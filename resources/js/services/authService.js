@@ -45,7 +45,7 @@ export const authService = {
 
   isAuthenticated: () => {
     const token = localStorage.getItem('access_token');
-    return !!token;
+    return !!token && token !== 'undefined' && token !== 'null'
   },
 
   getCurrentUser: () => {

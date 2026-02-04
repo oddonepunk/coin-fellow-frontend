@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { authService } from '../services/authService'
 
 const routes = [
   {
@@ -10,12 +9,6 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: () => import('../Pages/Auth/Login.vue'),
-    meta: { guest: true }
-  },
-  {
-    path: '/register',
-    name: 'Register',
-    component: () => import('../Pages/Auth/Register.vue'),
     meta: { guest: true }
   },
   {
@@ -44,7 +37,8 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = authService.isAuthenticated()
+  const token = localStorage.getItem('access_token')
+  const isAuthenticated = !!token
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')
