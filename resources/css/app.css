@@ -1,176 +1,103 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
-    :root {
-        --color-winter-500: #0ea5e9;
-        --color-frost-800: #1e293b;
-        --color-aurora-400: #2dd4bf;
-    }
-
-    body {
-        @apply bg-snow text-frost-800 font-sans;
-    }
-
-    /*super-снежинки */
-    .showflake {
-        @apply absolute text-blue-100 opacity-70;
-        animation: snowfall linear infinite;
-    }
-
-    /*верстка под Mini App в телеге */
-    .tg-app {
-        min-height: 100vh;
-        background: linear-gradient(100deg, #f8fafc 0%, #e0f2fe 100%);
-    }
-
-    /*анимация северного сияния*/
-    .aurora-bg {
-        background: linear-gradient(
-            135deg,
-            rgba(102, 126, 234, 0.1) 0%,
-            rgba(118, 75,162, 0.1) 25%,
-            rgba(240, 147, 251, 0.1) 50%,
-            rgba(245, 87, 108, 0.1) 75%,
-            rgba(255, 209, 102, 0.1) 100%
-        );
-        animation: aurora 8s ease-in-out infinite;
-    }
+  body {
+    @apply antialiased;
+  }
+  
+  :root {
+    --winter-50: #f0f9ff;
+    --winter-500: #0ea5e9;
+    --winter-600: #0284c7;
+    --frost-500: #64748b;
+    --frost-700: #334155;
+    --frost-800: #1e293b;
+    --aurora-400: #2dd4bf;
+    --aurora-500: #14b8a6;
+  }
 }
+
 @layer components {
-    /*Кнопки в стили телеги */
-    .tg-button {
-        @apply px-6 py-3 rounded-xl font-medium transition-all duration-300
-               flex items-center justify-center gap-2 shadow-lg
-               hover:shadow-xl active:scale-95;
-    }
-
-    .tg-button-primary {
-        @apply tg-button bg-winter-500 text-white
-               hover:bg-winter-600 active:bg-winter-700;
-    }
-
-    .tg-button-secondary {
-        @apply tg-button bg-white text-frost-700 border border-frost-200
-               hover:bg-frost-50 
-               hover:border-winter-300;
-    }
-
-    .tg-button-outline {
-        @apply tg-button border-2 border-winter-400 text-winter-500
-               hover:bg-winter-50 
-               hover:border-winter-500;
-    }
-
-    /*Карточки*/
-    .tg-card {
-        @apply bg-white/80 backdrop-blur-sm rounded-2xl px-6
-               border border-white/20 shadow-lg
-               hover:shadow-xl transition-shadow duration-300;
-    }
-    .tg-card-glass {
-        @apply bg-white/10 backdrop-blur-md rounded-2xl px-6
-               border border-white/20 shadow-2xl;
-    }
-
-    /*инпут поля*/
-    .tg-input {
-        @apply w-full px-4 py-3 bg-white/70 border border-frost-200
-               rounded-xl text-frost-800 placeholder-frost-400
-               focus:outline-none focus:ring-2 focus: ring winter -400
-               focus:border-transparent transition-all duration-200
-               hover:border-winter-300;
-    }
-
-    .tg-input-error {
-        @apply border-red-300 focus:ring-red-400;
-    }
-
-    /*аватарки*/
-    .tg-avatar-lg {
-        @apply rounded-full border-2 border-white shadow-lg;
-    }
-
-    .tg-avatar-md {
-        @apply tg-avatar w-12 h-12; 
-    }
-
-    .tg-avatar-sm {
-        @apply tg-avatar v-8 h-8;
-    }
-
-    .tg-nav-item {
-        @apply flex items-center gap-3 px-4 py-3 rounded-xl 
-           text-frost-600 hover:text-winter-500 hover:bg-winter-50
-           transition-all duration-200 cursor-pointer;
-    }
-
-  .tg-nav-item-active {
-        @apply bg-winter-50 text-winter-500 font-medium;
+  .btn-winter {
+    @apply px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 
+           text-white font-semibold rounded-xl shadow-lg
+           hover:from-blue-600 hover:to-indigo-700 
+           active:scale-95 transition-all duration-300
+           disabled:opacity-50 disabled:cursor-not-allowed;
   }
-
-   .tg-loader {
-        @apply w-8 h-8 border-4 border-winter-200 border-t-winter-500 
+  
+  .btn-telegram {
+    @apply px-6 py-3 bg-gradient-to-r from-telegram-blue to-telegram-light
+           text-white font-semibold rounded-xl shadow-lg
+           hover:shadow-xl active:scale-95 transition-all duration-300
+           flex items-center justify-center gap-2;
+  }
+  
+  .card-glass {
+    @apply bg-white/80 backdrop-blur-lg border border-white/30
+           rounded-2xl shadow-2xl;
+  }
+  
+  .card-winter {
+    @apply bg-gradient-to-br from-white to-blue-50
+           border border-blue-100 rounded-2xl shadow-xl
+           hover:shadow-2xl transition-shadow duration-300;
+  }
+  
+  .input-winter {
+    @apply w-full px-4 py-3 bg-white/90 border-2 border-blue-100
+           rounded-xl text-gray-800 placeholder-blue-300
+           focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-300
+           transition-all duration-300 hover:border-blue-200;
+  }
+  
+  .loader-winter {
+    @apply w-8 h-8 border-4 border-blue-200 border-t-blue-500
            rounded-full animate-spin;
-    }
-
-  .tg-skeleton {
-        @apply animate-pulse bg-frost-200 rounded;
   }
-
-
-   .tg-notification {
-    @apply fixed bottom-4 right-4 tg-card-glass max-w-sm 
-           transform transition-all duration-300 z-50;
+  
+  .divider-winter {
+    @apply relative my-8;
   }
-
-  .tg-notification-success {
-    @apply border-aurora-200 bg-aurora-50;
+  
+  .divider-winter::before {
+    @apply content-[''] absolute top-1/2 left-0 right-0 h-px
+           bg-gradient-to-r from-transparent via-blue-300 to-transparent;
   }
-
-  .tg-notification-error {
-    @apply border-red-200 bg-red-50;
+  
+  .divider-winter span {
+    @apply relative px-4 bg-white text-blue-500 font-medium;
   }
-
-  .tg-badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full 
-           text-xs font-medium;
-  }
-
-  .tg-badge-primary {
-    @apply tg-badge bg-winter-100 text-winter-700;
-  }
-
-  .tg-badge-success {
-    @apply tg-badge bg-aurora-100 text-aurora-700;
-  }
-
-  .tg-progress {
-    @apply w-full h-2 bg-frost-200 rounded-full overflow-hidden;
-  }
-
-  .tg-progress-bar {
-    @apply h-full bg-gradient-to-r from-winter-400 to-aurora-400 
-           transition-all duration-500;
+  
+  /* Аватар */
+  .avatar-winter {
+    @apply w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500
+           flex items-center justify-center shadow-xl;
   }
 }
 
-/* Анимация снежинок */
-@keyframes snowfall {
-  0% { transform: translateY(-100px) translateX(0) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(100vh) translateX(20px) rotate(360deg); opacity: 0; }
+/* Кастомные утилиты */
+.text-gradient-winter {
+  background: linear-gradient(135deg, #0ea5e9, #2dd4bf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Эффект параллакса для снега */
-.snow-container {
-  perspective: 1000px;
-  transform-style: preserve-3d;
+.text-glow {
+  text-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
 }
 
-/* Адаптация для Telegram WebApp */
-.tg-webapp {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
 }
 
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+.bg-telegram-blue { background-color: #0088cc; }
+.bg-telegram-light { background-color: #34aadc; }
