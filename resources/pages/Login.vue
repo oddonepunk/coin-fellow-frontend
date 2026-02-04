@@ -19,18 +19,35 @@
         </p>
       </div>
 
+      <div v-if="error" class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="text-red-700 font-medium">{{ error }}</span>
+        </div>
+      </div>
+
       <form @submit.prevent="handleLogin" class="space-y-6">
         <div>
           <label class="block text-blue-700 font-medium mb-2">
-            Email или телефон
+            Email, телефон или логин
           </label>
           <input
-            v-model="form.email"
+            v-model="form.login"
             type="text"
             required
             class="input-winter"
-            placeholder="user@example.com"
+            placeholder="email@example.com или +79001234567"
+            @input="detectInputType"
           >
+          <p v-if="inputType" class="mt-1 text-sm text-blue-600">
+            {{ 
+              inputType === 'email' ? '✓ Определен email' :
+              inputType === 'phone' ? '✓ Определен телефон' :
+              '✓ Определен логин'
+            }}
+          </p>
         </div>
 
         <div>
@@ -92,6 +109,7 @@
       <button
         @click="handleTelegramAuth"
         class="btn-telegram w-full py-4 mb-6"
+        :disabled="loading"
       >
         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.022c.242-.213-.054-.333-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.656-.643.136-.953l11.57-4.461c.537-.196 1.006.128.832.941z"/>
@@ -115,28 +133,198 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { api } from '@/utils/api'
 
 const router = useRouter()
 const form = reactive({
-  email: '',
+  login: '', 
   password: '',
   remember: false
 })
 const loading = ref(false)
 const showPassword = ref(false)
+const error = ref('')
+const inputType = ref('')
 
-const handleLogin = () => {
-  loading.value = true
-  setTimeout(() => {
-    localStorage.setItem('isAuthenticated', 'true')
+const detectInputType = () => {
+  const value = form.login.trim()
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  
+  const phoneRegex = /^(\+7|8|7)[\d\s\-()]{10,}$/
+  
+  if (emailRegex.test(value)) {
+    inputType.value = 'email'
+  } else if (phoneRegex.test(value.replace(/\D/g, ''))) {
+    inputType.value = 'phone'
+  } else if (value.length > 0) {
+    inputType.value = 'login'
+  } else {
+    inputType.value = ''
+  }
+}
+
+onMounted(() => {
+  const token = localStorage.getItem('access_token')
+  if (token) {
     router.push('/dashboard')
+  }
+  
+  const style = document.createElement('style')
+  style.textContent = `
+    .shake-animation {
+      animation: shake 0.5s ease-in-out;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    .loader-winter {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  `
+  document.head.appendChild(style)
+})
+
+const handleLogin = async () => {
+  error.value = ''
+  loading.value = true
+
+  try {
+    if (!form.login || !form.password) {
+      throw new Error('Заполните все поля')
+    }
+
+    console.log('Отправляем данные:', {
+      login: form.login,
+      password: '***' 
+    })
+
+ 
+    const response = await api.post('/auth/login', {
+      login: form.login,    
+      password: form.password
+    })
+
+    console.log('Login response:', response.data)
+
+    const data = response.data
+
+    if (data.access_token) {
+      localStorage.setItem('access_token', data.access_token)
+      localStorage.setItem('refresh_token', data.refresh_token)
+      localStorage.setItem('user', JSON.stringify(data.user || { login: form.login }))
+      
+      if (form.remember) {
+        localStorage.setItem('remember_me', 'true')
+      }
+    }
+
+    router.push('/dashboard')
+
+  } catch (err) {
+    console.error('Login error details:', err)
+    console.error('Response data:', err.response?.data)
+    console.error('Response status:', err.response?.status)
+    
+    if (err.response?.status === 422) {
+      const errors = err.response.data?.errors || {}
+      console.log('Validation errors:', errors)
+      
+      let errorMessage = 'Проверьте введенные данные'
+      
+      if (errors.login && errors.login[0]) {
+        errorMessage = errors.login[0]
+      } else if (errors.password && errors.password[0]) {
+        errorMessage = errors.password[0]
+      } else if (errors.email && errors.email[0]) {
+        errorMessage = errors.email[0]
+      }
+      
+      error.value = errorMessage
+      
+    } else if (err.response?.status === 401) {
+      error.value = 'Неверный логин или пароль'
+    } else if (err.response) {
+      error.value = err.response.data?.message || 
+                    err.response.data?.error || 
+                    'Ошибка сервера'
+    } else if (err.request) {
+      error.value = 'Сервер не отвечает. Проверьте, запущен ли бэкенд на localhost:8000'
+    } else {
+      error.value = err.message || 'Произошла ошибка при входе'
+    }
+    
+    const formElement = document.querySelector('form')
+    if (formElement) {
+      formElement.classList.add('shake-animation')
+      setTimeout(() => {
+        formElement.classList.remove('shake-animation')
+      }, 500)
+    }
+    
+  } finally {
     loading.value = false
-  }, 1000)
+  }
 }
 
 const handleTelegramAuth = () => {
-  alert('Telegram авторизация будет реализована позже')
+  if (window.Telegram && window.Telegram.WebApp) {
+    loading.value = true
+    
+    window.Telegram.WebApp.ready()
+    const user = window.Telegram.WebApp.initDataUnsafe?.user
+    
+    if (user) {
+      api.post('/auth/telegram', {
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name || '',
+        username: user.username || '',
+        photo_url: user.photo_url || ''
+      })
+      .then(response => {
+        const data = response.data
+        if (data.access_token) {
+          localStorage.setItem('access_token', data.access_token)
+          localStorage.setItem('refresh_token', data.refresh_token)
+          localStorage.setItem('user', JSON.stringify(data.user || user))
+          router.push('/dashboard')
+        } else {
+          throw new Error('Ошибка авторизации через Telegram')
+        }
+      })
+      .catch(err => {
+        console.error('Telegram auth error:', err)
+        error.value = err.response?.data?.message || 
+                      'Ошибка авторизации через Telegram'
+      })
+      .finally(() => {
+        loading.value = false
+      })
+    } else {
+      error.value = 'Данные Telegram не получены'
+      loading.value = false
+    }
+  } else {
+    error.value = 'Telegram авторизация доступна только в Telegram приложении'
+  }
 }
 </script>

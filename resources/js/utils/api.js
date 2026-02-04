@@ -1,11 +1,12 @@
 import axios from 'axios'
+import config from '@/config/api'
 
 const api = axios.create({
-  baseURL: '/api',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+  baseURL: config.baseURL,
+  timeout: config.timeout,
+  headers: config.headers,
+  withCredentials: config.withCredentials,
+  crossDomain: config.crossDomain
 })
 
 api.interceptors.request.use(
@@ -33,8 +34,13 @@ api.interceptors.response.use(
           throw new Error('No refresh token')
         }
         
-        const response = await axios.post('/api/auth/refresh', {
+        const response = await axios.post(`${config.baseURL}/auth/refresh`, {
           refresh_token: refreshToken
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
         })
         
         const { access_token, refresh_token } = response.data
@@ -50,7 +56,12 @@ api.interceptors.response.use(
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
         localStorage.removeItem('user')
-        window.location.href = '/login'
+        localStorage.removeItem('remember_me')
+        
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login'
+        }
+        
         return Promise.reject(refreshError)
       }
     }
@@ -59,4 +70,4 @@ api.interceptors.response.use(
   }
 )
 
-export { api }
+export { api, config }

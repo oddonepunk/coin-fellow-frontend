@@ -9,7 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2",
+    "axios": "^1.13.4",
     "pinia": "^2.1.7",
+    "react-redux": "^9.2.0",
     "vue": "^3.4.21",
     "vue-router": "^4.2.5"
   },
