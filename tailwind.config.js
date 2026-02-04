@@ -82,5 +82,26 @@ export default {
          
         },
     },
-    plugins: [],
+    plugins: [
+        require('@tailwindcss/forms'),
+        require('@tailwindcss/typography'),
+        require('@tailwindcss/aspect-ratio'),
+        require('@tailwindcss/container-queries'),
+
+        //для кастомных форм
+        function({addUtilities}) {
+            const newUtilities = {
+                '.custom-btn': {
+                    '@apply px-4 py-2 bg-winter-500 text-white rounded-lg hover:bg-winter-600 focus:outline-none focus:ring-2 focus:ring-winter-300 transition duration-200': {},
+                },
+                 '.card': {
+                    '@apply bg-snow rounded-xl shadow-lg p-6 border border-frost-200': {},
+                },
+                '.frosted-glass': {
+                    '@apply backdrop-blur-sm bg-white/30 border border-white/20': {},
+                },
+            }
+            addUtilities(newUtilities, ['responsive', 'hover'])
+        }
+    ],
 }
