@@ -39,15 +39,7 @@
             required
             class="input-winter"
             placeholder="email@example.com или +79001234567"
-            @input="detectInputType"
           >
-          <p v-if="inputType" class="mt-1 text-sm text-blue-600">
-            {{ 
-              inputType === 'email' ? '✓ Определен email' :
-              inputType === 'phone' ? '✓ Определен телефон' :
-              '✓ Определен логин'
-            }}
-          </p>
         </div>
 
         <div>
@@ -146,62 +138,7 @@ const form = reactive({
 const loading = ref(false)
 const showPassword = ref(false)
 const error = ref('')
-const inputType = ref('')
 
-const detectInputType = () => {
-  const value = form.login.trim()
-  
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  
-  const phoneRegex = /^(\+7|8|7)[\d\s\-()]{10,}$/
-  
-  if (emailRegex.test(value)) {
-    inputType.value = 'email'
-  } else if (phoneRegex.test(value.replace(/\D/g, ''))) {
-    inputType.value = 'phone'
-  } else if (value.length > 0) {
-    inputType.value = 'login'
-  } else {
-    inputType.value = ''
-  }
-}
-
-onMounted(() => {
-  const token = localStorage.getItem('access_token')
-  if (token) {
-    router.push('/dashboard')
-  }
-  
-  const style = document.createElement('style')
-  style.textContent = `
-    .shake-animation {
-      animation: shake 0.5s ease-in-out;
-    }
-    
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-      20%, 40%, 60%, 80% { transform: translateX(5px); }
-    }
-    
-    .loader-winter {
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: white;
-      animation: spin 1s linear infinite;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  `
-  document.head.appendChild(style)
-})
 
 const handleLogin = async () => {
   error.value = ''
@@ -212,18 +149,10 @@ const handleLogin = async () => {
       throw new Error('Заполните все поля')
     }
 
-    console.log('Отправляем данные:', {
-      login: form.login,
-      password: '***' 
-    })
-
- 
     const response = await api.post('/auth/login', {
-      login: form.login,    
+      login: form.login.trim(),
       password: form.password
     })
-
-    console.log('Login response:', response.data)
 
     const data = response.data
 
@@ -240,44 +169,18 @@ const handleLogin = async () => {
     router.push('/dashboard')
 
   } catch (err) {
-    console.error('Login error details:', err)
-    console.error('Response data:', err.response?.data)
-    console.error('Response status:', err.response?.status)
+    console.error('Login error:', err)
     
     if (err.response?.status === 422) {
-      const errors = err.response.data?.errors || {}
-      console.log('Validation errors:', errors)
-      
-      let errorMessage = 'Проверьте введенные данные'
-      
-      if (errors.login && errors.login[0]) {
-        errorMessage = errors.login[0]
-      } else if (errors.password && errors.password[0]) {
-        errorMessage = errors.password[0]
-      } else if (errors.email && errors.email[0]) {
-        errorMessage = errors.email[0]
-      }
-      
-      error.value = errorMessage
-      
+      error.value = err.response.data?.message || 'Неверные учетные данные'
     } else if (err.response?.status === 401) {
       error.value = 'Неверный логин или пароль'
     } else if (err.response) {
-      error.value = err.response.data?.message || 
-                    err.response.data?.error || 
-                    'Ошибка сервера'
+      error.value = err.response.data?.message || 'Ошибка сервера'
     } else if (err.request) {
-      error.value = 'Сервер не отвечает. Проверьте, запущен ли бэкенд на localhost:8000'
+      error.value = 'Сервер не отвечает'
     } else {
       error.value = err.message || 'Произошла ошибка при входе'
-    }
-    
-    const formElement = document.querySelector('form')
-    if (formElement) {
-      formElement.classList.add('shake-animation')
-      setTimeout(() => {
-        formElement.classList.remove('shake-animation')
-      }, 500)
     }
     
   } finally {
@@ -286,45 +189,144 @@ const handleLogin = async () => {
 }
 
 const handleTelegramAuth = () => {
-  if (window.Telegram && window.Telegram.WebApp) {
-    loading.value = true
-    
-    window.Telegram.WebApp.ready()
-    const user = window.Telegram.WebApp.initDataUnsafe?.user
-    
-    if (user) {
-      api.post('/auth/telegram', {
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name || '',
-        username: user.username || '',
-        photo_url: user.photo_url || ''
-      })
-      .then(response => {
-        const data = response.data
-        if (data.access_token) {
-          localStorage.setItem('access_token', data.access_token)
-          localStorage.setItem('refresh_token', data.refresh_token)
-          localStorage.setItem('user', JSON.stringify(data.user || user))
-          router.push('/dashboard')
-        } else {
-          throw new Error('Ошибка авторизации через Telegram')
-        }
-      })
-      .catch(err => {
-        console.error('Telegram auth error:', err)
-        error.value = err.response?.data?.message || 
-                      'Ошибка авторизации через Telegram'
-      })
-      .finally(() => {
-        loading.value = false
-      })
-    } else {
-      error.value = 'Данные Telegram не получены'
-      loading.value = false
-    }
-  } else {
-    error.value = 'Telegram авторизация доступна только в Telegram приложении'
-  }
+  error.value = 'Telegram авторизация будет реализована позже'
 }
+
+const style = document.createElement('style')
+style.textContent = `
+  .card-glass {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 100, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .avatar-winter {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid white;
+  }
+
+  .float-animation {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .text-gradient-winter {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+  }
+
+  .input-winter {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background: white;
+  }
+
+  .input-winter:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  }
+
+  .btn-winter {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-winter:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  }
+
+  .btn-winter:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .loader-winter {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .divider-winter {
+    display: flex;
+    align-items: center;
+    margin: 24px 0;
+    color: #94a3b8;
+  }
+
+  .divider-winter::before,
+  .divider-winter::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+  }
+
+  .divider-winter span {
+    padding: 0 16px;
+    font-size: 14px;
+  }
+
+  .btn-telegram {
+    background: linear-gradient(135deg, #0088cc 0%, #00aced 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-telegram:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 136, 204, 0.3);
+  }
+
+  .btn-telegram:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`
+document.head.appendChild(style)
 </script>
