@@ -283,7 +283,7 @@
           </div>
         </div>
 
-        <!-- Два основных блока -->
+        <!-- Два  блока -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
           <!-- График категорий -->
           <div class="lg:col-span-2">
@@ -328,7 +328,6 @@
             </div>
           </div>
 
-          <!-- Последние транзакции -->
           <div>
             <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100 h-full">
               <div class="flex items-center justify-between mb-4">
@@ -372,7 +371,6 @@
           </div>
         </div>
 
-        <!-- Мои группы -->
         <div class="mb-6">
           <div class="flex items-center justify-between mb-4">
             <div>
@@ -415,7 +413,6 @@
               </button>
             </div>
 
-            <!-- Кнопка создания новой группы -->
             <div class="bg-white rounded-xl shadow-sm p-4 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center cursor-pointer" 
                  @click="createGroup">
               <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-2">
@@ -431,7 +428,6 @@
       </main>
     </div>
 
-    <!-- Мобильная навигация -->
     <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40">
       <div class="flex justify-around items-center h-14">
         <button 
@@ -451,7 +447,6 @@
       </div>
     </nav>
 
-    <!-- Модалка добавления расхода -->
     <div v-if="showAddExpense" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-xl max-w-md w-full p-5">
         <div class="flex items-center justify-between mb-4">
