@@ -1,107 +1,65 @@
-import { plugin } from "postcss";
-
+/** @type {import('tailwindcss').Config} */
 export default {
-    darkMode: 'class',
-    content: [
-        "./resources/**/*.{vue,js,ts,jsx,tsx}",
-        "./resources/views/**/*.blade.php",
-    ],
-    theme: {
-        extend: {
-            colors: {
-                'winter': {
-                    50: '#f0f9ff',
-                    100: '#e0f2fe',
-                    200: '#bae6fd',
-                    300: '#7dd3fc',
-                    400: '#38bdf8',
-                    500: '#0ea5e9',
-                    600: '#0284c7',
-                    700: '#0369a1',
-                    800: '#075985',
-                    900: '#0c4a6e',
-                },
-                'frost': {
-                    50:  '#f8fafc',
-                    100: '#f1f5f9',
-                    200: '#e2e8f0',
-                    300: '#cbd5e1',
-                    400: '#94a3b8',
-                    500: '#64748b',
-                    600: '#475569',
-                    700: '#334155',
-                    800: '#1e293b',
-                    900: '#0f172a',
-                },
-                'aurora': {
-                    50: '#f0fdfa',
-                    100: '#ccfbf1',
-                    200: '#99f6e4',
-                    300: '#5eead4',
-                    400: '#2dd4bf',
-                    500: '#14b8a6',
-                    600: '#0d9488',
-                    700: '#0f766e',
-                    800: '#115e59',
-                    900: '#134e4a',
-                },
-                'snow': '#ffffff',
-                'ice': '#e0f7fa',
-                'polar': '#bbdefb',
-            },
-            fontFamily: {
-                'sans': ['Inter', 'system-ui', 'sans-serif'],
-                'display': ['Poppins', 'Inter', 'system-ui'],
-            },
-            backgroundImage: {
-                'winter-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                'snow-gradient': 'linear-gradient(to bottom, #f8fafc, #e2e8f0)',
-                'aurora-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #ffd166 100%)',
-                'frost-pattern': "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%239C92AC\" fill-opacity=\"0.1\"%3E%3Cpath d=\"M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')",
-            },
-            animation: {
-                'float': 'float 6s ease-in-out infinite',
-                'snowfall': 'snowfall 10s linear infinite',
-                'aurora': 'aurora 8s ease-in-out infinite',
-                'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                },
-            keyframes: {
-                float: {
-                    '0%, 100%': {transform: 'translateY(0)'},
-                    '50%': {transform: 'translateY(-10px)'},
-                },
-                snowfall: {
-                    '0%': {transform: 'translateY(-10px) translateX(0)'},
-                    '100%': {transform: 'translateY(100vh) translateX(20px)'},
-                },
-                aurora: {
-                    '0%, 100%': {opacity: '0.3'},
-                    '50%': {opacity: '0.7'},
-                },
-            },
-         
+  content: [
+    "./index.html",
+    "./resources/**/*.{vue,js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        blue: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
-    },
-    plugins: [
-        require('@tailwindcss/forms'),
-        require('@tailwindcss/typography'),
-        require('@tailwindcss/aspect-ratio'),
-        require('@tailwindcss/container-queries'),
-
-        //для кастомных форм
-        function({addUtilities}) {
-            const newUtilities = {
-                '.custom-btn': {
-                    '@apply px-4 py-2 bg-winter-500 text-white rounded-lg hover:bg-winter-600 focus:outline-none focus:ring-2 focus:ring-winter-300 transition duration-200': {},
-                },
-                 '.card': {
-                    '@apply bg-snow rounded-xl shadow-lg p-6 border border-frost-200': {},
-                },
-                '.frosted-glass': {
-                    '@apply backdrop-blur-sm bg-white/30 border border-white/20': {},
-                },
-            }
-            addUtilities(newUtilities, ['responsive', 'hover'])
+        indigo: {
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#6366f1',
+          600: '#4f46e5',
+          700: '#4338ca',
+          800: '#3730a3',
+          900: '#312e81',
+        },
+        telegram: {
+          blue: '#0088cc',
+          light: '#34aadc',
         }
-    ],
+      },
+      fontFamily: {
+        'sans': ['Inter', 'system-ui', 'sans-serif'],
+        'display': ['Poppins', 'Inter', 'system-ui'],
+      },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+        'snowfall': 'snowfall linear infinite',
+        'aurora': 'aurora 15s ease infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        snowfall: {
+          '0%': { transform: 'translateY(-100px) translateX(0) rotate(0deg)' },
+          '100%': { transform: 'translateY(100vh) translateX(20px) rotate(360deg)' },
+        },
+        aurora: {
+          '0%, 100%': { opacity: '0.3' },
+          '50%': { opacity: '0.7' },
+        },
+      },
+    },
+  },
+  plugins: [],
 }

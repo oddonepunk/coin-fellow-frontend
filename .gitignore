@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Vite cache
+.vite/
+.vitest/
+
+# Local Netlify folder
+.netlify
+
+# Optional - если используете storybook
+storybook-static/
+
+# Optional - если используете cypress
+cypress/videos/
+cypress/screenshots/
+
+# Optional - если используете покрытие тестами
+coverage/
+*.lcov
+
+# Optional - если используете typescript
+*.tsbuildinfo
