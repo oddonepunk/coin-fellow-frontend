@@ -1,39 +1,23 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import authMiddleware from '../middleware/auth'
+import Login from '../pages/Login.vue'
+import Register from '../pages/Register.vue'
+import Dashboard from '../routes/Dashboard.vue'
 
 const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../routes/Login.vue')
+    component: Login
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('../routes/Register.vue')
+    component: Register  
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('../routes/Dashboard.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/analytics',
-    name: 'Analytics',
-    component: () => import('../routes/Analytics.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/groups',
-    name: 'Groups',
-    component: () => import('../routes/Groups.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/settings',
-    name: 'Settings',
-    component: () => import('../routes/Settings.vue'),
+    component: Dashboard,
     meta: { requiresAuth: true }
   }
 ]
@@ -44,8 +28,12 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth) {
-    authMiddleware(to, from, next)
+  const token = localStorage.getItem('access_token')
+  
+  if (to.meta.requiresAuth && !token) {
+    next('/login')
+  } else if ((to.path === '/login' || to.path === '/register') && token) {
+    next('/dashboard')
   } else {
     next()
   }

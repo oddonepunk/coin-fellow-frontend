@@ -2,13 +2,18 @@
   <div v-if="!isAuthenticated" class="min-h-screen flex items-center justify-center">
     <div class="text-center">
       <p class="text-gray-600 mb-4">Требуется авторизация</p>
-      <router-link to="/login" class="text-blue-600 hover:text-blue-700 font-medium">
+      <p class="text-sm text-gray-500 mb-2">Debug info:</p>
+      <p class="text-xs text-gray-400">isAuthenticated: {{ isAuthenticated }}</p>
+      <p class="text-xs text-gray-400">Token: {{ hasToken ? '✅' : '❌' }}</p>
+      <p class="text-xs text-gray-400">User in storage: {{ hasUser ? '✅' : '❌' }}</p>
+      <router-link to="/login" class="text-blue-600 hover:text-blue-700 font-medium mt-4 inline-block">
         Перейти к входу
       </router-link>
     </div>
   </div>
 
   <div v-else class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex">
+    <!-- Sidebar - всегда виден на десктопе -->
     <Sidebar 
       :mobileMenuOpen="mobileMenuOpen"
       @toggle-menu="mobileMenuOpen = !mobileMenuOpen"
@@ -16,6 +21,7 @@
       class="hidden lg:block lg:w-72 lg:flex-shrink-0"
     />
     
+    <!-- Мобильный Sidebar (overlay) -->
     <div 
       v-if="mobileMenuOpen"
       class="fixed inset-0 z-50 lg:hidden"
@@ -30,6 +36,7 @@
       </div>
     </div>
 
+    <!-- Основной контент -->
     <div class="flex-1 min-w-0 flex flex-col">
       <DashboardHeader 
         :mobileMenuOpen="mobileMenuOpen"
@@ -41,10 +48,12 @@
       />
 
       <main class="flex-1 overflow-y-auto p-4 lg:p-6 xl:p-8">
+        <!-- Индикатор загрузки -->
         <div v-if="dashboardLoading" class="flex justify-center items-center py-12">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
 
+        <!-- Ошибка загрузки -->
         <div v-else-if="dashboardError" class="text-center py-12">
           <p class="text-red-600 mb-4">{{ dashboardError }}</p>
           <button 
@@ -55,6 +64,7 @@
           </button>
         </div>
 
+        <!-- Данные дашборда -->
         <div v-else class="max-w-7xl mx-auto">
           <DashboardStats :stats="stats" />
 
@@ -96,11 +106,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useDashboard } from '../composables/useDashboard'
 
+// Компоненты
 import Sidebar from '../components/layout/Sidebar.vue'
 import DashboardHeader from '../components/layout/DashboardHeader.vue'
 import DashboardStats from '../components/layout/DashboardStats.vue'
@@ -111,7 +122,7 @@ import MobileNavigation from '../components/layout/MobileNavigation.vue'
 import AddExpenseModal from '../components/layout/AddExpenseModal.vue'
 
 const router = useRouter()
-const { isAuthenticated, checkAuth } = useAuth()
+const { isAuthenticated, checkAuth, user } = useAuth()
 const { 
   loading: dashboardLoading,
   error: dashboardError,
@@ -121,17 +132,21 @@ const {
   userGroups,
   loadDashboardData,
   addExpense,
-  createGroup,
-  formatNumber
+  createGroup
 } = useDashboard()
 
+// Состояние UI
 const mobileMenuOpen = ref(false)
 const selectedPeriod = ref('Сегодня')
 const selectedCategoryPeriod = ref('month')
 const showAddExpense = ref(false)
-const currentMobileNav = ref('/dashboard')
 const showMorePeriods = ref(false)
 
+// Для отладки
+const hasToken = computed(() => !!localStorage.getItem('access_token'))
+const hasUser = computed(() => !!localStorage.getItem('user'))
+
+// Новая транзакция
 const newExpense = reactive({
   type: 'expense',
   amount: '',
@@ -140,6 +155,7 @@ const newExpense = reactive({
   groupId: ''
 })
 
+// Категории для выбора
 const expenseCategories = ref([
   { id: 1, name: 'Продукты' },
   { id: 2, name: 'Транспорт' },
@@ -153,8 +169,13 @@ const expenseCategories = ref([
   { id: 10, name: 'Другое' }
 ])
 
+console.log('Dashboard mounted')
+console.log('Token in localStorage:', localStorage.getItem('access_token') ? '✅' : '❌')
+console.log('User in localStorage:', localStorage.getItem('user') ? '✅' : '❌')
+console.log('isAuthenticated initial:', isAuthenticated.value)
+
+// Методы
 const goToMobile = (path) => {
-  currentMobileNav.value = path
   router.push(path)
   mobileMenuOpen.value = false
 }
@@ -197,7 +218,24 @@ const handleCreateGroup = async () => {
   }
 }
 
+// Проверка авторизации при загрузке
 onMounted(async () => {
-  await checkAuth()
+  console.log('Checking auth on mount...')
+  const authResult = await checkAuth()
+  console.log('Auth check result:', authResult)
+  console.log('isAuthenticated after check:', isAuthenticated.value)
+  
+  if (isAuthenticated.value) {
+    console.log('User authenticated, loading dashboard data...')
+    await loadDashboardData()
+  }
+})
+
+// Следим за изменением статуса авторизации
+watch(isAuthenticated, (newVal) => {
+  console.log('isAuthenticated changed to:', newVal)
+  if (newVal) {
+    loadDashboardData()
+  }
 })
 </script>
