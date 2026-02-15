@@ -1,32 +1,39 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import authMiddleware from '../middleware/auth'
 
 const routes = [
   {
-    path: '/',
-    redirect: '/dashboard'
-  },
-  {
     path: '/login',
     name: 'Login',
-    component: () => import('../Pages/Auth/Login.vue'),
-    meta: { guest: true }
+    component: () => import('../routes/Login.vue')
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../routes/Register.vue')
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('../Pages/Dashboard.vue'),
+    component: () => import('../routes/Dashboard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/analytics',
+    name: 'Analytics',
+    component: () => import('../routes/Analytics.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/groups',
     name: 'Groups',
-    component: () => import('../Pages/Groups/Index.vue'),
+    component: () => import('../routes/Groups.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/groups/:id',
-    name: 'GroupShow',
-    component: () => import('../Pages/Groups/Show.vue'),
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../routes/Settings.vue'),
     meta: { requiresAuth: true }
   }
 ]
@@ -37,13 +44,8 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('access_token')
-  const isAuthenticated = !!token
-
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login')
-  } else if (to.meta.guest && isAuthenticated) {
-    next('/dashboard')
+  if (to.meta.requiresAuth) {
+    authMiddleware(to, from, next)
   } else {
     next()
   }

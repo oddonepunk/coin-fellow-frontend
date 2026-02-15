@@ -1,14 +1,11 @@
-export const authGuard = (to, from, next) => {
+export default function authMiddleware(to, from, next) {
   const token = localStorage.getItem('access_token')
-  const isAuthenticated = !!token
   
-  if (to.meta.requiresAuth && !isAuthenticated) {
+  if (!token && to.path !== '/login' && to.path !== '/register') {
     next('/login')
-  }
-  else if (to.name === 'Login' && isAuthenticated) {
+  } else if (token && (to.path === '/login' || to.path === '/register')) {
     next('/dashboard')
-  }
-  else {
+  } else {
     next()
   }
 }

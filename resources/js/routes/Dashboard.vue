@@ -1,5 +1,14 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex">
+  <div v-if="!isAuthenticated" class="min-h-screen flex items-center justify-center">
+    <div class="text-center">
+      <p class="text-gray-600 mb-4">Требуется авторизация</p>
+      <router-link to="/login" class="text-blue-600 hover:text-blue-700 font-medium">
+        Перейти к входу
+      </router-link>
+    </div>
+  </div>
+
+  <div v-else class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex">
     <Sidebar 
       :mobileMenuOpen="mobileMenuOpen"
       @toggle-menu="mobileMenuOpen = !mobileMenuOpen"
@@ -27,12 +36,26 @@
         :selectedPeriod="selectedPeriod"
         @toggle-menu="mobileMenuOpen = !mobileMenuOpen"
         @add-expense="showAddExpense = true"
-        @select-period="selectedPeriod = $event"
+        @select-period="handlePeriodChange"
         @toggle-more-periods="showMorePeriods = !showMorePeriods"
       />
 
       <main class="flex-1 overflow-y-auto p-4 lg:p-6 xl:p-8">
-        <div class="max-w-7xl mx-auto">
+        <div v-if="dashboardLoading" class="flex justify-center items-center py-12">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+
+        <div v-else-if="dashboardError" class="text-center py-12">
+          <p class="text-red-600 mb-4">{{ dashboardError }}</p>
+          <button 
+            @click="loadDashboardData"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Попробовать снова
+          </button>
+        </div>
+
+        <div v-else class="max-w-7xl mx-auto">
           <DashboardStats :stats="stats" />
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
@@ -47,7 +70,10 @@
             </div>
           </div>
 
-          <UserGroups :groups="userGroups" @create-group="createGroup" />
+          <UserGroups 
+            :groups="userGroups" 
+            @create-group="handleCreateGroup" 
+          />
         </div>
       </main>
 
@@ -61,16 +87,19 @@
       v-if="showAddExpense"
       :new-expense="newExpense"
       :expense-categories="expenseCategories"
+      :user-groups="userGroups"
       @close="showAddExpense = false"
-      @add-expense="addExpenseHandler"
+      @add-expense="handleAddExpense"
       @update-expense="updateExpenseField"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
+import { useDashboard } from '../composables/useDashboard'
 
 import Sidebar from '../components/layout/Sidebar.vue'
 import DashboardHeader from '../components/layout/DashboardHeader.vue'
@@ -82,6 +111,19 @@ import MobileNavigation from '../components/layout/MobileNavigation.vue'
 import AddExpenseModal from '../components/layout/AddExpenseModal.vue'
 
 const router = useRouter()
+const { isAuthenticated, checkAuth } = useAuth()
+const { 
+  loading: dashboardLoading,
+  error: dashboardError,
+  stats,
+  categories,
+  recentTransactions,
+  userGroups,
+  loadDashboardData,
+  addExpense,
+  createGroup,
+  formatNumber
+} = useDashboard()
 
 const mobileMenuOpen = ref(false)
 const selectedPeriod = ref('Сегодня')
@@ -90,49 +132,12 @@ const showAddExpense = ref(false)
 const currentMobileNav = ref('/dashboard')
 const showMorePeriods = ref(false)
 
-const user = ref({
-  name: 'Nicholas Oddone',
-  email: 'oddonenso2@gmail.com',
-  initials: 'NO'
-})
-
-const stats = reactive({
-  income: 154200,
-  expenses: 87450,
-  balance: 66750,
-  budgetUsed: 65,
-  incomeChange: 12,
-  expensesChange: -5
-})
-
-const categories = ref([
-  { id: 1, name: 'Продукты', amount: 24500, percentage: 28, color: '#3B82F6', icon: '🛒' },
-  { id: 2, name: 'Транспорт', amount: 18500, percentage: 21, color: '#10B981', icon: '🚗' },
-  { id: 3, name: 'Развлечения', amount: 15200, percentage: 17, color: '#8B5CF6', icon: '🎬' },
-  { id: 4, name: 'Кафе', amount: 12800, percentage: 15, color: '#F59E0B', icon: '☕' },
-  { id: 5, name: 'Прочее', amount: 16450, percentage: 19, color: '#EF4444', icon: '📦' },
-])
-
-const recentTransactions = ref([
-  { id: 1, type: 'expense', amount: 1250, description: 'Продукты', category: 'Продукты', time: '2 часа назад', icon: '🛒' },
-  { id: 2, type: 'income', amount: 45000, description: 'Зарплата', category: 'Доходы', time: 'Вчера', icon: '💰' },
-  { id: 3, type: 'expense', amount: 650, description: 'Такси', category: 'Транспорт', time: 'Вчера', icon: '🚗' },
-  { id: 4, type: 'expense', amount: 3200, description: 'Ресторан', category: 'Кафе', time: '2 дня назад', icon: '🍽️' },
-  { id: 5, type: 'expense', amount: 890, description: 'Кино', category: 'Развлечения', time: '3 дня назад', icon: '🎬' },
-])
-
-const userGroups = ref([
-  { id: 1, name: 'Семья', members: 4, balance: 2450, avatars: ['A', 'B', 'C'] },
-  { id: 2, name: 'Друзья', members: 6, balance: -1200, avatars: ['D', 'E', 'F'] },
-  { id: 3, name: 'Коллеги', members: 8, balance: 0, avatars: ['G', 'H', 'I'] },
-  { id: 4, name: 'Путешествие', members: 3, balance: 5600, avatars: ['J', 'K', 'L'] },
-])
-
 const newExpense = reactive({
   type: 'expense',
   amount: '',
   category: '',
-  description: ''
+  description: '',
+  groupId: ''
 })
 
 const expenseCategories = ref([
@@ -148,135 +153,51 @@ const expenseCategories = ref([
   { id: 10, name: 'Другое' }
 ])
 
-const userName = computed(() => user.value.name)
-const userEmail = computed(() => user.value.email)
-const userInitials = computed(() => user.value.initials)
-
-const formatNumber = (num) => {
-  return new Intl.NumberFormat('ru-RU').format(num)
-}
-
-const logout = () => {
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('user')
-  router.push('/login')
-}
-
 const goToMobile = (path) => {
   currentMobileNav.value = path
   router.push(path)
   mobileMenuOpen.value = false
 }
 
-const createGroup = () => {
-  const groupName = prompt('Введите название группы:')
-  if (!groupName) return
-
-  const newGroup = {
-    id: Date.now(),
-    name: groupName,
-    members: 1,
-    balance: 0,
-    avatars: [user.value.initials]
-  }
-
-  userGroups.value.unshift(newGroup)
-  alert(`Группа "${groupName}" создана!`)
-}
-
-const getCategoryIcon = (categoryName) => {
-  const icons = {
-    'Продукты': '🛒',
-    'Транспорт': '🚗',
-    'Кафе': '☕',
-    'Развлечения': '🎬',
-    'Здоровье': '🏥',
-    'Образование': '📚',
-    'Одежда': '👕',
-    'Красота': '💄',
-    'Подарки': '🎁',
-    'Доходы': '💰',
-    'Прочее': '📦'
-  }
-  return icons[categoryName] || '💸'
-}
-
-const updateCategoryPercentages = () => {
-  const totalExpenses = categories.value.reduce((sum, cat) => sum + cat.amount, 0)
-  categories.value.forEach(category => {
-    category.percentage = Math.round((category.amount / totalExpenses) * 100)
-  })
-}
-
-const resetExpenseForm = () => {
-  newExpense.type = 'expense'
-  newExpense.amount = ''
-  newExpense.category = ''
-  newExpense.description = ''
-  showAddExpense.value = false
+const handlePeriodChange = (period) => {
+  selectedPeriod.value = period
+  loadDashboardData()
 }
 
 const updateExpenseField = (payload) => {
   Object.assign(newExpense, payload)
 }
 
-const addExpenseHandler = () => {
-  if (!newExpense.amount || parseFloat(newExpense.amount) <= 0) {
-    alert('Введите корректную сумму')
-    return
+const handleAddExpense = async () => {
+  try {
+    await addExpense(newExpense)
+    
+    newExpense.type = 'expense'
+    newExpense.amount = ''
+    newExpense.category = ''
+    newExpense.description = ''
+    newExpense.groupId = ''
+    showAddExpense.value = false
+    
+    alert('Транзакция успешно добавлена!')
+  } catch (err) {
+    alert(err.message || 'Ошибка при добавлении транзакции')
   }
-
-  if (!newExpense.category) {
-    alert('Выберите категорию')
-    return
-  }
-
-  const amount = parseFloat(newExpense.amount)
-  const category = expenseCategories.value.find(cat => cat.id === parseInt(newExpense.category))
-
-  const newTransaction = {
-    id: Date.now(),
-    type: newExpense.type,
-    amount: amount,
-    description: newExpense.description || category?.name || 'Без описания',
-    category: category?.name || 'Прочее',
-    time: 'Только что',
-    icon: getCategoryIcon(category?.name),
-    date: new Date().toISOString()
-  }
-
-  recentTransactions.value.unshift(newTransaction)
-
-  if (newExpense.type === 'income') {
-    stats.income += amount
-  } else {
-    stats.expenses += amount
-
-    const categoryIndex = categories.value.findIndex(c => c.name === category?.name)
-    if (categoryIndex !== -1) {
-      categories.value[categoryIndex].amount += amount
-      updateCategoryPercentages()
-    } else {
-      categories.value.push({
-        id: categories.value.length + 1,
-        name: category?.name || 'Прочее',
-        amount: amount,
-        percentage: 10,
-        color: '#6B7280',
-        icon: getCategoryIcon(category?.name)
-      })
-      updateCategoryPercentages()
-    }
-  }
-
-  stats.balance = stats.income - stats.expenses
-  stats.budgetUsed = Math.min(Math.round((stats.expenses / stats.income) * 100), 100)
-
-  alert('Транзакция успешно добавлена!')
-  resetExpenseForm()
 }
 
-onMounted(() => {
-  updateCategoryPercentages()
+const handleCreateGroup = async () => {
+  const groupName = prompt('Введите название группы:')
+  if (!groupName) return
+
+  try {
+    await createGroup({ name: groupName })
+    alert(`Группа "${groupName}" создана!`)
+  } catch (err) {
+    alert(err.message || 'Ошибка при создании группы')
+  }
+}
+
+onMounted(async () => {
+  await checkAuth()
 })
 </script>
