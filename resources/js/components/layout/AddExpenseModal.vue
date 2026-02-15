@@ -31,6 +31,20 @@
           </div>
         </div>
 
+        <div v-if="userGroups && userGroups.length > 0">
+          <label class="block text-xs font-medium text-gray-700 mb-1.5">Группа</label>
+          <select 
+            :value="newExpense.groupId"
+            @change="$emit('update-expense', { groupId: $event.target.value })"
+            class="w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500 bg-white text-sm"
+          >
+            <option value="">Выберите группу</option>
+            <option v-for="group in userGroups" :key="group.id" :value="group.id">
+              {{ group.name }}
+            </option>
+          </select>
+        </div>
+
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1.5">Сумма</label>
           <div class="relative">
@@ -79,6 +93,8 @@
         <button
           @click="$emit('add-expense')"
           class="flex-1 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-medium hover:shadow-md transition-all active:scale-95"
+          :disabled="!isFormValid"
+          :class="{ 'opacity-50 cursor-not-allowed': !isFormValid }"
         >
           Добавить
         </button>
@@ -88,7 +104,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   newExpense: {
     type: Object,
     required: true
@@ -96,8 +114,18 @@ defineProps({
   expenseCategories: {
     type: Array,
     required: true
+  },
+  userGroups: {
+    type: Array,
+    default: () => []
   }
 })
 
 defineEmits(['close', 'add-expense', 'update-expense'])
+
+const isFormValid = computed(() => {
+  return props.newExpense.amount && 
+         props.newExpense.category && 
+         (props.userGroups.length === 0 || props.newExpense.groupId)
+})
 </script>
