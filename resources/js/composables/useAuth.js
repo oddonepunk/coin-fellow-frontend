@@ -51,56 +51,73 @@ export function useAuth() {
             loading.value = true
             error.value = null
             
+            // Подготавливаем данные для отправки
             const loginData = {
-                login: credentials.email || credentials.login,
+                login: credentials.email || credentials.login || credentials.username,
                 password: credentials.password
             }
             
             console.log('Sending login data:', loginData)
             
-            const response = await authApi.login(loginData)
+            // Отправляем запрос
+            const responseData = await authApi.login(loginData)
             
-            console.log('Login response full:', response)
-            console.log('Response structure:', {
-                hasAccessToken: !!response.access_token,
-                hasRefreshToken: !!response.refresh_token,
-                hasUser: !!response.user,
-                tokenType: response.token_type,
-                expiresIn: response.expires_in
+            console.log('✅ Login response received:', responseData)
+            console.log('Response keys:', Object.keys(responseData))
+            
+            // СОХРАНЯЕМ ТОКЕНЫ - принудительно и немедленно
+            if (responseData.access_token) {
+                localStorage.setItem('access_token', responseData.access_token)
+                console.log('✅ Access token saved to localStorage')
+            } else {
+                console.error('❌ No access_token in response!')
+                console.log('Full response:', JSON.stringify(responseData, null, 2))
+            }
+            
+            if (responseData.refresh_token) {
+                localStorage.setItem('refresh_token', responseData.refresh_token)
+                console.log('✅ Refresh token saved to localStorage')
+            }
+            
+            // Сохраняем пользователя
+            if (responseData.user) {
+                localStorage.setItem('user', JSON.stringify(responseData.user))
+                user.value = responseData.user
+                console.log('✅ User saved:', responseData.user)
+            } else {
+                console.warn('⚠️ No user in response, creating from token?')
+                // Если нет user, создаем из данных токена
+                const tokenData = parseJwt(responseData.access_token)
+                if (tokenData) {
+                    const userFromToken = {
+                        id: tokenData.sub,
+                        username: tokenData.username,
+                        email: tokenData.email
+                    }
+                    localStorage.setItem('user', JSON.stringify(userFromToken))
+                    user.value = userFromToken
+                    console.log('✅ User created from token:', userFromToken)
+                }
+            }
+            
+            // Проверяем localStorage сразу после сохранения
+            console.log('📦 localStorage check:', {
+                access_token: localStorage.getItem('access_token') ? '✅' : '❌',
+                refresh_token: localStorage.getItem('refresh_token') ? '✅' : '❌',
+                user: localStorage.getItem('user') ? '✅' : '❌'
             })
-            
-            if (response.access_token) {
-                localStorage.setItem('access_token', response.access_token)
-                console.log('✅ Access token saved')
-            } else {
-                console.error('❌ No access_token in response')
-            }
-            
-            if (response.refresh_token) {
-                localStorage.setItem('refresh_token', response.refresh_token)
-                console.log('✅ Refresh token saved')
-            }
-            
-            if (response.user) {
-                localStorage.setItem('user', JSON.stringify(response.user))
-                user.value = response.user
-                console.log('✅ User saved:', response.user)
-            } else {
-                console.error('❌ No user in response')
-            }
             
             isAuthenticated.value = true
             console.log('✅ isAuthenticated set to true')
             
-            console.log('localStorage after login:', {
-                access_token: localStorage.getItem('access_token')?.substring(0, 20) + '...',
-                refresh_token: localStorage.getItem('refresh_token')?.substring(0, 20) + '...',
-                user: localStorage.getItem('user')
-            })
+            setTimeout(() => {
+                console.log('➡️ Redirecting to dashboard...')
+                router.push('/dashboard')
+            }, 100)
             
-            return response
+            return responseData
         } catch (err) {
-            console.error('❌ Login error:', err.response?.data || err.message)
+            console.error('❌ Login error:', err)
             if (err.response) {
                 console.error('Error status:', err.response.status)
                 console.error('Error data:', err.response.data)
@@ -111,6 +128,20 @@ export function useAuth() {
             throw err
         } finally {
             loading.value = false
+        }
+    }
+
+    const parseJwt = (token) => {
+        try {
+            const base64Url = token.split('.')[1]
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            }).join(''))
+            return JSON.parse(jsonPayload)
+        } catch (e) {
+            console.error('Error parsing JWT:', e)
+            return null
         }
     }
 
@@ -128,7 +159,7 @@ export function useAuth() {
             user.value = null
             isAuthenticated.value = false
             loading.value = false
-            console.log('✅ Logout complete, redirected to login')
+            console.log('✅ Logout complete')
             router.push('/login')
         }
     }

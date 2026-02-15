@@ -38,7 +38,7 @@
             type="text"
             required
             class="input-winter"
-            placeholder="email@example.com или +79001234567"
+            placeholder="email@example.com или username"
           >
         </div>
 
@@ -89,8 +89,8 @@
           :disabled="loading"
           class="btn-winter w-full py-4 text-lg font-bold"
         >
-          <span v-if="loading" class="loader-winter inline-block"></span>
-          <span v-else>Войти</span>
+          <span v-if="loading" class="loader-winter inline-block mr-2"></span>
+          <span>{{ loading ? 'Вход...' : 'Войти' }}</span>
         </button>
       </form>
 
@@ -125,9 +125,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { api } from '@/utils/api'
+import apiClient from '../js/api/apiClient'
 
 const router = useRouter()
 const form = reactive({
@@ -139,7 +139,6 @@ const loading = ref(false)
 const showPassword = ref(false)
 const error = ref('')
 
-
 const handleLogin = async () => {
   error.value = ''
   loading.value = true
@@ -149,40 +148,46 @@ const handleLogin = async () => {
       throw new Error('Заполните все поля')
     }
 
-    const response = await api.post('/auth/login', {
+    const loginData = {
       login: form.login.trim(),
       password: form.password
-    })
-
-    const data = response.data
-
-    if (data.access_token) {
-      localStorage.setItem('access_token', data.access_token)
-      localStorage.setItem('refresh_token', data.refresh_token)
-      localStorage.setItem('user', JSON.stringify(data.user || { login: form.login }))
-      
-      if (form.remember) {
-        localStorage.setItem('remember_me', 'true')
-      }
     }
 
-    router.push('/dashboard')
+    console.log('Sending login request:', loginData)
+    
+    const response = await apiClient.post('/auth/login', loginData)
+    
+    // Извлекаем данные из response.data.data
+    const tokens = response.data.data || response.data
+    
+    console.log('Tokens extracted:', tokens)
+
+    if (tokens.access_token) {
+      localStorage.setItem('access_token', tokens.access_token)
+      console.log('Access token saved')
+    }
+    
+    if (tokens.refresh_token) {
+      localStorage.setItem('refresh_token', tokens.refresh_token)
+    }
+    
+    if (tokens.user) {
+      localStorage.setItem('user', JSON.stringify(tokens.user))
+    }
+
+    console.log('localStorage check:', {
+      access_token: localStorage.getItem('access_token') ? '✅' : '❌'
+    })
+
+    if (localStorage.getItem('access_token')) {
+      router.replace('/dashboard')
+    } else {
+      error.value = 'Ошибка при сохранении данных'
+    }
 
   } catch (err) {
     console.error('Login error:', err)
-    
-    if (err.response?.status === 422) {
-      error.value = err.response.data?.message || 'Неверные учетные данные'
-    } else if (err.response?.status === 401) {
-      error.value = 'Неверный логин или пароль'
-    } else if (err.response) {
-      error.value = err.response.data?.message || 'Ошибка сервера'
-    } else if (err.request) {
-      error.value = 'Сервер не отвечает'
-    } else {
-      error.value = err.message || 'Произошла ошибка при входе'
-    }
-    
+    error.value = err.response?.data?.message || 'Ошибка входа'
   } finally {
     loading.value = false
   }
@@ -191,142 +196,139 @@ const handleLogin = async () => {
 const handleTelegramAuth = () => {
   error.value = 'Telegram авторизация будет реализована позже'
 }
-
-const style = document.createElement('style')
-style.textContent = `
-  .card-glass {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 100, 255, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  }
-
-  .avatar-winter {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 4px solid white;
-  }
-
-  .float-animation {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-  }
-
-  .text-gradient-winter {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .text-glow {
-    text-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
-  }
-
-  .input-winter {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    background: white;
-  }
-
-  .input-winter:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-  }
-
-  .btn-winter {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .btn-winter:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-  }
-
-  .btn-winter:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  .loader-winter {
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 1s linear infinite;
-    display: inline-block;
-    vertical-align: middle;
-    margin-right: 8px;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .divider-winter {
-    display: flex;
-    align-items: center;
-    margin: 24px 0;
-    color: #94a3b8;
-  }
-
-  .divider-winter::before,
-  .divider-winter::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
-  }
-
-  .divider-winter span {
-    padding: 0 16px;
-    font-size: 14px;
-  }
-
-  .btn-telegram {
-    background: linear-gradient(135deg, #0088cc 0%, #00aced 100%);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: all 0.3s ease;
-  }
-
-  .btn-telegram:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0, 136, 204, 0.3);
-  }
-
-  .btn-telegram:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-`
-document.head.appendChild(style)
 </script>
+
+<style scoped>
+.card-glass {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 100, 255, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.avatar-winter {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid white;
+}
+
+.float-animation {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.text-gradient-winter {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+}
+
+.input-winter {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.input-winter:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.btn-winter {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-winter:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-winter:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loader-winter {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.divider-winter {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+  color: #94a3b8;
+}
+
+.divider-winter::before,
+.divider-winter::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+}
+
+.divider-winter span {
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.btn-telegram {
+  background: linear-gradient(135deg, #0088cc 0%, #00aced 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.btn-telegram:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 136, 204, 0.3);
+}
+
+.btn-telegram:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+</style>
