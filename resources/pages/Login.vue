@@ -153,18 +153,12 @@ const handleLogin = async () => {
       password: form.password
     }
 
-    console.log('Sending login request:', loginData)
-    
     const response = await apiClient.post('/auth/login', loginData)
     
-    // Извлекаем данные из response.data.data
     const tokens = response.data.data || response.data
-    
-    console.log('Tokens extracted:', tokens)
 
     if (tokens.access_token) {
       localStorage.setItem('access_token', tokens.access_token)
-      console.log('Access token saved')
     }
     
     if (tokens.refresh_token) {
@@ -175,10 +169,6 @@ const handleLogin = async () => {
       localStorage.setItem('user', JSON.stringify(tokens.user))
     }
 
-    console.log('localStorage check:', {
-      access_token: localStorage.getItem('access_token') ? '✅' : '❌'
-    })
-
     if (localStorage.getItem('access_token')) {
       router.replace('/dashboard')
     } else {
@@ -186,7 +176,6 @@ const handleLogin = async () => {
     }
 
   } catch (err) {
-    console.error('Login error:', err)
     error.value = err.response?.data?.message || 'Ошибка входа'
   } finally {
     loading.value = false
