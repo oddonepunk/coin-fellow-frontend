@@ -2,10 +2,6 @@
   <div v-if="!isAuthenticated" class="min-h-screen flex items-center justify-center">
     <div class="text-center">
       <p class="text-gray-600 mb-4">Требуется авторизация</p>
-      <p class="text-sm text-gray-500 mb-2">Debug info:</p>
-      <p class="text-xs text-gray-400">isAuthenticated: {{ isAuthenticated }}</p>
-      <p class="text-xs text-gray-400">Token: {{ hasToken ? '✅' : '❌' }}</p>
-      <p class="text-xs text-gray-400">User in storage: {{ hasUser ? '✅' : '❌' }}</p>
       <router-link to="/login" class="text-blue-600 hover:text-blue-700 font-medium mt-4 inline-block">
         Перейти к входу
       </router-link>
@@ -13,20 +9,17 @@
   </div>
 
   <div v-else class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex">
-    <Sidebar 
+    <Sidebar
       :mobileMenuOpen="mobileMenuOpen"
       @toggle-menu="mobileMenuOpen = !mobileMenuOpen"
       @close-menu="mobileMenuOpen = false"
       class="hidden lg:block lg:w-72 lg:flex-shrink-0"
     />
-    
-    <div 
-      v-if="mobileMenuOpen"
-      class="fixed inset-0 z-50 lg:hidden"
-    >
+
+    <div v-if="mobileMenuOpen" class="fixed inset-0 z-50 lg:hidden">
       <div class="absolute inset-0 bg-black bg-opacity-50" @click="mobileMenuOpen = false"></div>
       <div class="absolute left-0 top-0 h-full w-72 bg-white shadow-xl">
-        <Sidebar 
+        <Sidebar
           :mobileMenuOpen="mobileMenuOpen"
           @toggle-menu="mobileMenuOpen = !mobileMenuOpen"
           @close-menu="mobileMenuOpen = false"
@@ -35,7 +28,7 @@
     </div>
 
     <div class="flex-1 min-w-0 flex flex-col">
-      <DashboardHeader 
+      <DashboardHeader
         :mobileMenuOpen="mobileMenuOpen"
         :selectedPeriod="selectedPeriod"
         @toggle-menu="mobileMenuOpen = !mobileMenuOpen"
@@ -51,7 +44,7 @@
 
         <div v-else-if="dashboardError" class="text-center py-12">
           <p class="text-red-600 mb-4">{{ dashboardError }}</p>
-          <button 
+          <button
             @click="loadDashboardData"
             class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
@@ -64,7 +57,7 @@
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
             <div class="lg:col-span-2">
-              <CategoriesChart 
+              <CategoriesChart
                 :categories="categories"
                 v-model:selectedPeriod="selectedCategoryPeriod"
               />
@@ -74,25 +67,34 @@
             </div>
           </div>
 
-          <UserGroups 
-            :groups="userGroups" 
-            @create-group="handleCreateGroup" 
+          <UserGroups
+            :groups="userGroups"
+            :loading="groupsLoading"
+            :error="groupsError"
+            @show-create="handleShowCreateGroup"
+            @open-group="handleOpenGroup"
+            @manage-group="handleManageGroup"
+          />
+
+          <CreateGroupModal
+            v-if="showCreateGroupModal"
+            :loading="groupsLoading"
+            :error="groupsError"
+            @close="closeCreateGroupModal"
+            @submit="handleCreateGroup"
           />
         </div>
       </main>
 
-      <MobileNavigation 
-        class="lg:hidden"
-        @navigate="goToMobile" 
-      />
+      <MobileNavigation class="lg:hidden" @navigate="goToMobile" />
     </div>
 
-    <AddExpenseModal 
+    <AddExpenseModal
       v-if="showAddExpense"
       :new-expense="newExpense"
       :expense-categories="expenseCategories"
       :user-groups="userGroups"
-      @close="showAddExpense = false"
+      @close="closeAddExpenseModal"
       @add-expense="handleAddExpense"
       @update-expense="updateExpenseField"
     />
@@ -100,10 +102,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useDashboard } from '../composables/useDashboard'
+import { useGroups } from '../composables/useGroups'
 
 import Sidebar from '../components/layout/Sidebar.vue'
 import DashboardHeader from '../components/layout/DashboardHeader.vue'
@@ -113,29 +116,34 @@ import RecentTransactions from '../components/layout/RecentTransactions.vue'
 import UserGroups from '../components/layout/UserGroups.vue'
 import MobileNavigation from '../components/layout/MobileNavigation.vue'
 import AddExpenseModal from '../components/layout/AddExpenseModal.vue'
+import CreateGroupModal from '../components/groups/CreateGroupModal.vue'
 
 const router = useRouter()
-const { isAuthenticated, checkAuth, user } = useAuth()
-const { 
+const { isAuthenticated, checkAuth } = useAuth()
+const {
   loading: dashboardLoading,
   error: dashboardError,
   stats,
   categories,
   recentTransactions,
-  userGroups,
   loadDashboardData,
   addExpense,
-  createGroup
 } = useDashboard()
+
+const {
+  groups: userGroups,
+  loading: groupsLoading,
+  error: groupsError,
+  createGroup,
+  loadGroups
+} = useGroups()
 
 const mobileMenuOpen = ref(false)
 const selectedPeriod = ref('Сегодня')
 const selectedCategoryPeriod = ref('month')
 const showAddExpense = ref(false)
 const showMorePeriods = ref(false)
-
-const hasToken = computed(() => !!localStorage.getItem('access_token'))
-const hasUser = computed(() => !!localStorage.getItem('user'))
+const showCreateGroupModal = ref(false)
 
 const newExpense = reactive({
   type: 'expense',
@@ -172,46 +180,64 @@ const updateExpenseField = (payload) => {
   Object.assign(newExpense, payload)
 }
 
+const closeAddExpenseModal = () => {
+  showAddExpense.value = false
+}
+
 const handleAddExpense = async () => {
   try {
     await addExpense(newExpense)
-    
     newExpense.type = 'expense'
     newExpense.amount = ''
     newExpense.category = ''
     newExpense.description = ''
     newExpense.groupId = ''
-    showAddExpense.value = false
-    
+    closeAddExpenseModal()
     alert('Транзакция успешно добавлена!')
   } catch (err) {
     alert(err.message || 'Ошибка при добавлении транзакции')
   }
 }
 
-const handleCreateGroup = async () => {
-  const groupName = prompt('Введите название группы:')
-  if (!groupName) return
+const handleShowCreateGroup = () => {
+  console.log('Dashboard: получено событие show-create, открываем модалку')
+  showCreateGroupModal.value = true
+}
 
+const closeCreateGroupModal = () => {
+  showCreateGroupModal.value = false
+}
+
+const handleCreateGroup = async (groupData) => {
   try {
-    await createGroup({ name: groupName })
-    alert(`Группа "${groupName}" создана!`)
+    await createGroup(groupData)
+    closeCreateGroupModal()
+    alert(`Группа "${groupData.name}" создана!`)
   } catch (err) {
     alert(err.message || 'Ошибка при создании группы')
   }
 }
 
+const handleOpenGroup = (groupId) => {
+  router.push(`/groups/${groupId}`)
+}
+
+const handleManageGroup = (group) => {
+  router.push(`/groups/${group.id}/manage`)
+}
+
 onMounted(async () => {
   await checkAuth()
-  
   if (isAuthenticated.value) {
     await loadDashboardData()
+    await loadGroups()
   }
 })
 
 watch(isAuthenticated, (newVal) => {
   if (newVal) {
     loadDashboardData()
+    loadGroups()
   }
 })
 </script>
