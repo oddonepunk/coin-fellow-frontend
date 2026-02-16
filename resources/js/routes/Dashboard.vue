@@ -113,7 +113,7 @@ import DashboardHeader from '../components/layout/DashboardHeader.vue'
 import DashboardStats from '../components/layout/DashboardStats.vue'
 import CategoriesChart from '../components/layout/CategoriesChart.vue'
 import RecentTransactions from '../components/layout/RecentTransactions.vue'
-import UserGroups from '../components/layout/UserGroups.vue'
+import UserGroups from '../components/groups/UserGroups.vue'
 import MobileNavigation from '../components/layout/MobileNavigation.vue'
 import AddExpenseModal from '../components/layout/AddExpenseModal.vue'
 import CreateGroupModal from '../components/groups/CreateGroupModal.vue'
@@ -200,7 +200,6 @@ const handleAddExpense = async () => {
 }
 
 const handleShowCreateGroup = () => {
-  console.log('Dashboard: получено событие show-create, открываем модалку')
   showCreateGroupModal.value = true
 }
 

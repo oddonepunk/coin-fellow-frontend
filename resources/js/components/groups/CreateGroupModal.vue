@@ -3,7 +3,7 @@
     <div class="bg-white rounded-xl max-w-md w-full p-6">
       <div class="flex items-center justify-between mb-6">
         <h3 class="text-xl font-bold text-gray-900">Создать новую группу</h3>
-        <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
+        <button @click="handleClose" class="text-gray-400 hover:text-gray-600">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
@@ -54,7 +54,7 @@
         <div class="flex space-x-3 pt-4">
           <button
             type="button"
-            @click="$emit('close')"
+            @click="handleClose"
             class="flex-1 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
             Отмена
@@ -95,7 +95,13 @@ const form = reactive({
   description: ''
 })
 
+const handleClose = () => {
+  console.log('🟣 CreateGroupModal: закрытие модалки, эмитим close')
+  emit('close')
+}
+
 const handleSubmit = () => {
+  console.log('🟣 CreateGroupModal: отправка формы, данные:', form)
   emit('submit', { ...form })
 }
 </script>
