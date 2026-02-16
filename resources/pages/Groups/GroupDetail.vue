@@ -11,7 +11,7 @@
               </svg>
             </button>
             <div>
-              <h1 class="text-3xl font-bold text-gray-900">{{ group?.name }}</h1>
+              <h1 class="text-3xl font-bold text-gray-900">{{ group?.name || 'Загрузка...' }}</h1>
               <p class="text-gray-600 mt-1">{{ group?.description || 'Нет описания' }}</p>
             </div>
           </div>
@@ -25,12 +25,28 @@
             >
               Управление
             </button>
+            <button
+              @click="router.push(`/groups/${groupId}/analytics`)"
+              class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              Аналитика
+            </button>
           </div>
         </div>
       </div>
 
+      <!-- Отладка -->
+      <div v-if="debug" class="mb-4 p-4 bg-yellow-100 rounded-lg">
+        <p class="font-bold">Отладка:</p>
+        <p>Group ID: {{ groupId }}</p>
+        <p>Loading: {{ loading }}</p>
+        <p>Group data: {{ group ? '✅ загружена' : '❌ нет данных' }}</p>
+        <p>Expenses: {{ expenses.length }}</p>
+        <p>Balances: {{ balances.length }}</p>
+      </div>
+
       <!-- Статистика -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div v-if="!loading && group" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-white rounded-xl shadow-sm p-5">
           <p class="text-sm text-gray-500 mb-1">Всего расходов</p>
           <p class="text-2xl font-bold text-gray-900">{{ formatNumber(totalExpenses) }} {{ group?.currency }}</p>
@@ -51,8 +67,8 @@
         </div>
       </div>
 
-      <!-- Долги (упрощенные) -->
-      <div v-if="simplifiedDebts.length > 0" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+      <!-- Долги -->
+      <div v-if="!loading && simplifiedDebts.length > 0" class="bg-white rounded-xl shadow-sm p-6 mb-8">
         <h2 class="text-lg font-bold text-gray-900 mb-4">Кто кому должен</h2>
         <div class="space-y-3">
           <div
@@ -72,7 +88,7 @@
         </div>
       </div>
 
-      <!-- Основной контент: расходы и участники -->
+      <!-- Основной контент -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Список расходов -->
         <div class="lg:col-span-2">
@@ -129,9 +145,13 @@
           <div class="bg-white rounded-xl shadow-sm p-6">
             <h2 class="text-lg font-bold text-gray-900 mb-6">Участники</h2>
 
-            <div class="space-y-4">
+            <div v-if="loading" class="flex justify-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+
+            <div v-else class="space-y-4">
               <div
-                v-for="member in group?.users"
+                v-for="member in group?.users || []"
                 :key="member.id"
                 class="flex items-center justify-between"
               >
@@ -212,6 +232,7 @@ const inviteLoading = ref(false)
 const inviteError = ref('')
 const showExpenseForm = ref(false)
 const showInviteForm = ref(false)
+const debug = ref(true)
 
 const totalExpenses = computed(() => {
   return expenses.value.reduce((sum, exp) => sum + exp.amount, 0)
@@ -247,21 +268,34 @@ const getBalanceClass = (userId) => {
 }
 
 const loadGroupData = async () => {
+  console.log('📥 Загрузка данных группы ID:', groupId)
   loading.value = true
   try {
-    const [groupData, expensesData, balancesData, debtsData] = await Promise.all([
-      groupsApi.getGroup(groupId),
-      groupsApi.getGroupExpenses(groupId),
-      groupsApi.getGroupBalances(groupId),
-      groupsApi.getSimplifiedDebts(groupId)
-    ])
+    console.log('1. Запрос группы...')
+    const groupResponse = await groupsApi.getGroup(groupId)
+    console.log('✅ Группа загружена:', groupResponse)
+    group.value = groupResponse.data || groupResponse
 
-    group.value = groupData.data || groupData
-    expenses.value = expensesData.data || expensesData
-    balances.value = balancesData.data || balancesData
-    simplifiedDebts.value = debtsData.data || debtsData
+    console.log('2. Запрос расходов...')
+    const expensesResponse = await groupsApi.getGroupExpenses(groupId)
+    console.log('✅ Расходы загружены:', expensesResponse)
+    expenses.value = expensesResponse.data || expensesResponse
+
+    console.log('3. Запрос балансов...')
+    const balancesResponse = await groupsApi.getGroupBalances(groupId)
+    console.log('✅ Балансы загружены:', balancesResponse)
+    balances.value = balancesResponse.data || balancesResponse
+
+    console.log('4. Запрос долгов...')
+    const debtsResponse = await groupsApi.getSimplifiedDebts(groupId)
+    console.log('✅ Долги загружены:', debtsResponse)
+    simplifiedDebts.value = debtsResponse.data || debtsResponse
+
+    console.log('✅ Все данные загружены')
   } catch (err) {
-    console.error('Error loading group data:', err)
+    console.error('❌ Ошибка загрузки данных группы:', err)
+    console.error('Статус:', err.response?.status)
+    console.error('Данные ошибки:', err.response?.data)
     alert('Ошибка загрузки данных группы')
   } finally {
     loading.value = false
@@ -342,6 +376,7 @@ const getUserInitials = (member) => {
 }
 
 onMounted(() => {
+  console.log('🔵 GroupDetail монтируется, ID группы:', groupId)
   loadGroupData()
 })
 </script>
