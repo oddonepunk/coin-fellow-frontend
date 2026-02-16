@@ -6,7 +6,7 @@
         <p class="text-xs text-gray-500 mt-0.5">Совместные финансы с друзьями</p>
       </div>
       <button
-        @click="$emit('show-create')"
+        @click="handleShowCreate"
         class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,7 +31,7 @@
       <p class="text-gray-600 mb-2">У вас пока нет групп</p>
       <p class="text-sm text-gray-500 mb-4">Создайте первую группу для совместного учета расходов</p>
       <button
-        @click="$emit('show-create')"
+        @click="handleShowCreate"
         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
       >
         Создать группу
@@ -79,14 +79,14 @@
 
         <div class="flex gap-2">
           <button
-            @click="$emit('open-group', group.id)"
+            @click="handleOpenGroup(group.id)"
             class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg font-medium transition-colors"
           >
             Открыть
           </button>
           <button
             v-if="canManageGroup(group)"
-            @click="$emit('manage-group', group)"
+            @click="handleManageGroup(group)"
             class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors"
             title="Управление группой"
           >
@@ -118,6 +118,22 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['show-create', 'open-group', 'manage-group'])
+
+const handleShowCreate = () => {
+  console.log('🔵🔵🔵 UserGroups: КНОПКА "Создать группу" НАЖАТА!')
+  console.log('UserGroups: эмитим событие show-create в родительский компонент')
+  emit('show-create')
+}
+
+const handleOpenGroup = (groupId) => {
+  console.log('UserGroups: открытие группы', groupId)
+  emit('open-group', groupId)
+}
+
+const handleManageGroup = (group) => {
+  console.log('UserGroups: управление группой', group)
+  emit('manage-group', group)
+}
 
 const getInitials = (member) => {
   if (!member) return 'U'
