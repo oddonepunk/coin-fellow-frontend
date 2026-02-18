@@ -86,8 +86,6 @@
         </div>
       </main>
 
-      <button @click="checkRoutes">Проверить маршруты</button>
-
       <MobileNavigation class="lg:hidden" @navigate="goToMobile" />
     </div>
 
@@ -220,33 +218,16 @@ const handleCreateGroup = async (groupData) => {
 }
 
 const handleOpenGroup = (groupId) => {
-  console.log('🔵 Dashboard: handleOpenGroup вызван с ID:', groupId)
-  console.log('🔵 Dashboard: тип groupId:', typeof groupId)
-  console.log('🔵 Dashboard: URL для перехода:', `/groups/${groupId}`)
-  console.log('🔵 Dashboard: текущий роутер:', router)
-  
   if (!groupId) {
-    console.error('❌ Dashboard: groupId не определен!')
     return
   }
   
   try {
     router.push(`/groups/${groupId}`)
-    console.log('🔵 Dashboard: router.push выполнен')
   } catch (error) {
-    console.error('❌ Dashboard: ошибка при push:', error)
+    console.error('Ошибка при переходе:', error)
   }
 }
-
-
-const checkRoutes = () => {
-  console.log('📋 Все зарегистрированные маршруты:')
-  const routes = router.getRoutes()
-  routes.forEach((route, index) => {
-    console.log(`${index + 1}. ${route.path} -> ${route.components ? Object.keys(route.components)[0] : route.name}`)
-  })
-}
-
 
 const handleManageGroup = (group) => {
   router.push(`/groups/${group.id}/manage`)
@@ -259,7 +240,6 @@ onMounted(async () => {
     await loadGroups()
   }
 })
-
 
 watch(isAuthenticated, (newVal) => {
   if (newVal) {
