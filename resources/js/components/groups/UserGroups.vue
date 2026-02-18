@@ -120,7 +120,6 @@ const props = defineProps({
 const emit = defineEmits(['show-create', 'open-group', 'manage-group'])
 
 const handleOpenGroup = (groupId) => {
-  console.log('🟢 UserGroups: открытие группы с ID:', groupId)
   emit('open-group', groupId)
 }
 

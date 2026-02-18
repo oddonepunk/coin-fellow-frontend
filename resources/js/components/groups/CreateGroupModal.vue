@@ -96,12 +96,10 @@ const form = reactive({
 })
 
 const handleClose = () => {
-  console.log('🟣 CreateGroupModal: закрытие модалки, эмитим close')
   emit('close')
 }
 
 const handleSubmit = () => {
-  console.log('🟣 CreateGroupModal: отправка формы, данные:', form)
   emit('submit', { ...form })
 }
 </script>
