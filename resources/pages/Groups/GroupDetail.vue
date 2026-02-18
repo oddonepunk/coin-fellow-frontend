@@ -211,10 +211,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import groupsApi from '../../api/groups'
-import ExpenseForm from '../../components/groups/ExpenseForm.vue'
-import InviteForm from '../../components/groups/InviteForm.vue'
-import { useAuth } from '../../composables/useAuth'
+import groupsApi from '../../js/api/groups'
+import ExpenseForm from '../../js/components/groups/ExpenseForm.vue'
+import InviteForm from '../../js/components/groups/InviteForm.vue'
+import { useAuth } from '../../js/composables/useAuth'
 
 const router = useRouter()
 const route = useRoute()

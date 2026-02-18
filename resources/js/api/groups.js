@@ -7,10 +7,16 @@ export default {
   },
 
   async getGroup(groupId) {
-    const response = await apiClient.get(`/groups/${groupId}`)
-    return response.data
+    console.log('📡 API getGroup вызван с ID:', groupId)
+    try {
+      const response = await apiClient.get(`/groups/${groupId}`)
+      console.log('📡 API getGroup ответ:', response)
+      return response.data
+    } catch (error) {
+      console.error('📡 API getGroup ошибка:', error)
+      throw error
+    }
   },
-
   async createGroup(groupData) {
     const response = await apiClient.post('/groups', groupData)
     return response.data
