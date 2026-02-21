@@ -101,3 +101,16 @@
 
 .bg-telegram-blue { background-color: #0088cc; }
 .bg-telegram-light { background-color: #34aadc; }
+
+.Vue-Toastification__toast {
+  border-radius: 12px;
+  font-family: inherit;
+}
+
+.Vue-Toastification__toast--success {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.Vue-Toastification__toast--error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
