@@ -30,7 +30,7 @@ const toastOptions = {
   icon: true,
   rtl:false
 }
-
+//добавил функционал для уведомлений
 app.use(Toast, toastOptions)
 app.use(pinia)
 app.use(router)
