@@ -74,7 +74,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { debounce } from 'lodash'
 import usersApi from '../../api/users'
 

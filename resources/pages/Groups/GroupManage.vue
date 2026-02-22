@@ -101,12 +101,10 @@
           <div v-if="activeTab === 'members'">
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-bold text-gray-900">Участники ({{ group?.users?.length || 0 }})</h2>
-              <button
-                @click="showInviteForm = true"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                + Пригласить
-              </button>
+              <button @click="showInviteForm = true" class="bg-green-500 text-white p-2">
+  ТЕСТ: Открыть модалку
+</button>
+<div>Статус модалки: {{ showInviteForm }}</div>
             </div>
 
             <div class="space-y-3">
