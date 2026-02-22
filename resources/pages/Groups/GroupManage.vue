@@ -217,17 +217,19 @@ import { useRouter, useRoute } from 'vue-router'
 import groupsApi from '../../api/groups'
 import InviteForm from '../../components/groups/InviteForm.vue'
 import { useAuth } from '../../composables/useAuth'
+import { useNotification } from '../../composables/useNotification'
+
 
 const router = useRouter()
 const route = useRoute()
 const { user } = useAuth()
+const { showSuccess, showWarning, showError, handleApiError } = useNotification()
 const groupId = route.params.groupId
 
 const group = ref(null)
 const loading = ref(false)
 const activeTab = ref('settings')
 
-// Обновление группы
 const updateForm = ref({
   name: '',
   currency: '',
@@ -236,12 +238,10 @@ const updateForm = ref({
 const updateLoading = ref(false)
 const updateError = ref('')
 
-// Приглашение
 const showInviteForm = ref(false)
 const inviteLoading = ref(false)
 const inviteError = ref('')
 
-// Права пользователя
 const userRole = computed(() => {
   if (!group.value?.users) return null
   const currentUser = group.value.users.find(u => u.id === user.value?.id)
@@ -253,14 +253,14 @@ const isAdmin = computed(() => ['owner', 'admin'].includes(userRole.value))
 
 const canChangeRole = (member) => {
   if (!isOwner.value) return false
-  if (member.pivot?.role === 'owner') return false // нельзя менять роль владельца
+  if (member.pivot?.role === 'owner') return false 
   return true
 }
 
 const canRemoveMember = (member) => {
   if (!isAdmin.value) return false
-  if (member.id === user.value?.id) return false // нельзя удалить себя
-  if (member.pivot?.role === 'owner') return false // нельзя удалить владельца
+  if (member.id === user.value?.id) return false 
+  if (member.pivot?.role === 'owner') return false 
   return true
 }
 
@@ -276,8 +276,7 @@ const loadGroup = async () => {
       description: group.value.description || ''
     }
   } catch (err) {
-    console.error('Error loading group:', err)
-    alert('Ошибка загрузки группы')
+    handleApiError(err, 'Ошибка загрузки группы')
   } finally {
     loading.value = false
   }
@@ -289,9 +288,10 @@ const handleUpdateGroup = async () => {
   try {
     await groupsApi.updateGroup(groupId, updateForm.value)
     await loadGroup()
-    alert('Группа обновлена')
+    showSuccess('Группа успешно обновлена')
   } catch (err) {
     updateError.value = err.response?.data?.message || 'Ошибка обновления группы'
+    showError(updateError.value)
   } finally {
     updateLoading.value = false
   }
@@ -304,9 +304,10 @@ const handleInviteUser = async (inviteData) => {
     await groupsApi.inviteUser(groupId, inviteData)
     showInviteForm.value = false
     await loadGroup()
-    alert('Пользователь приглашен')
+    showSuccess('Пользователь успешно приглашен в группу')
   } catch (err) {
     inviteError.value = err.response?.data?.message || 'Ошибка приглашения'
+    handleApiError(err, 'Ошибка при приглашении пользователя')
   } finally {
     inviteLoading.value = false
   }
@@ -316,8 +317,9 @@ const changeRole = async (member) => {
   try {
     await groupsApi.updateUserRole(groupId, member.id, { role: member.pivot.role })
     await loadGroup()
+    showSuccess('Роль пользователя изменена')
   } catch (err) {
-    alert('Ошибка изменения роли')
+    handleApiError(err, 'Ошибка изменения роли')
   }
 }
 
@@ -331,8 +333,9 @@ const removeMember = async (member) => {
   try {
     await groupsApi.removeUser(groupId, member.id)
     await loadGroup()
+    showSuccess('Пользователь удален из группы')
   } catch (err) {
-    alert('Ошибка удаления пользователя')
+    handleApiError(err, 'Ошибка удаления пользователя')
   }
 }
 
@@ -345,9 +348,10 @@ const confirmDeleteGroup = () => {
 const deleteGroup = async () => {
   try {
     await groupsApi.deleteGroup(groupId)
+    showSuccess('Группа успешно удалена')
     router.push('/dashboard')
   } catch (err) {
-    alert('Ошибка удаления группы')
+    handleApiError(err, 'Ошибка удаления группы')
   }
 }
 
@@ -360,12 +364,12 @@ const confirmLeaveGroup = () => {
 const leaveGroup = async () => {
   try {
     await groupsApi.leaveGroup(groupId)
+    showSuccess('Вы покинули группу')
     router.push('/dashboard')
   } catch (err) {
-    alert('Ошибка при выходе из группы')
+    handleApiError(err, 'Ошибка при выходе из группы')
   }
 }
-
 const goBack = () => {
   router.push(`/groups/${groupId}`)
 }
