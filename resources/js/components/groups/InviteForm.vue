@@ -115,7 +115,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'submit'])
-const { showSuccess, showError, showWarning, showInfo, handleApiError } = useNotification()
+const { showWarning, showInfo } = useNotification()
 
 const searchQuery = ref('')
 const selectedUser = ref(null)
@@ -137,7 +137,7 @@ const handleSubmit = () => {
   }
   
   if (!form.email_or_username) {
-    showError('Не удалось определить email или username пользователя')
+    showWarning('Не удалось определить email или username пользователя')
     return
   }
   

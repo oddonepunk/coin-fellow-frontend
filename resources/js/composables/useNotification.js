@@ -7,7 +7,7 @@ export function useNotification() {
         console.error('API Error:', error)
 
         const serverMessage = error.response?.data?.message ||
-                            error.response?.data.error ||
+                            error.response?.data?.error ||
                             error.message
 
         let userMessage = customMessage || 'Произошла ошибка'
@@ -40,7 +40,7 @@ export function useNotification() {
     }
 
     const showWarning = (message) => {
-        toast.success(message, {
+        toast.warning(message, {  
             timeout: 5000,
             position: 'top-right'
         })
@@ -53,10 +53,18 @@ export function useNotification() {
         })
     }
 
-   return {
-    handleApiError,
-    showSuccess,
-    showWarning,
-    showInfo
-   }
+    const showError = (message) => {
+        toast.error(message, {
+            timeout: 7000,
+            position: 'top-right'
+        })
+    }
+
+    return {
+        handleApiError,
+        showSuccess,
+        showWarning,
+        showInfo,
+        showError
+    }
 }
