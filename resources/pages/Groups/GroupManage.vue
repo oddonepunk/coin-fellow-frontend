@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- Шапка -->
       <div class="mb-8">
         <div class="flex items-center space-x-4">
           <button @click="goBack" class="p-2 hover:bg-white rounded-lg transition-colors">
@@ -16,7 +15,6 @@
         </div>
       </div>
 
-      <!-- Вкладки -->
       <div class="bg-white rounded-xl shadow-sm overflow-hidden">
         <div class="border-b border-gray-200">
           <nav class="flex -mb-px">
@@ -45,7 +43,6 @@
         </div>
 
         <div class="p-6">
-          <!-- Вкладка настроек -->
           <div v-if="activeTab === 'settings'">
             <h2 class="text-lg font-bold text-gray-900 mb-4">Основные настройки</h2>
             
@@ -97,7 +94,6 @@
             </form>
           </div>
 
-          <!-- Вкладка участников -->
           <div v-if="activeTab === 'members'">
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-bold text-gray-900">Участники ({{ group?.users?.length || 0 }})</h2>
@@ -167,7 +163,6 @@
             </div>
           </div>
 
-          <!-- Опасная зона -->
           <div v-if="activeTab === 'danger'">
             <h2 class="text-lg font-bold text-red-600 mb-4">Опасная зона</h2>
             
@@ -202,7 +197,6 @@
         </div>
       </div>
 
-      <!-- Модалка приглашения -->
       <InviteForm
         v-if="showInviteForm"
         :group-id="groupId"
@@ -212,7 +206,6 @@
         @submit="handleInviteUser"
       />
 
-      <!-- Модалка подтверждения удаления участника -->
       <ConfirmModal
         v-if="showRemoveMemberModal"
         type="danger"
@@ -224,7 +217,6 @@
         @cancel="showRemoveMemberModal = false"
       />
 
-      <!-- Модалка подтверждения удаления группы -->
       <ConfirmModal
         v-if="showDeleteGroupModal"
         type="danger"
@@ -236,7 +228,6 @@
         @cancel="showDeleteGroupModal = false"
       />
 
-      <!-- Модалка подтверждения выхода из группы -->
       <ConfirmModal
         v-if="showLeaveGroupModal"
         type="warning"
