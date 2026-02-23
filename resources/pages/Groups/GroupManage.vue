@@ -101,15 +101,17 @@
           <div v-if="activeTab === 'members'">
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-lg font-bold text-gray-900">Участники ({{ group?.users?.length || 0 }})</h2>
-              <button @click="showInviteForm = true" class="bg-green-500 text-white p-2">
-  ТЕСТ: Открыть модалку
-</button>
-<div>Статус модалки: {{ showInviteForm }}</div>
+              <button
+                @click="showInviteForm = true"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                + Пригласить участника
+              </button>
             </div>
 
-            <div class="space-y-3">
+            <div v-if="group?.users?.length" class="space-y-3">
               <div
-                v-for="member in group?.users"
+                v-for="member in group.users"
                 :key="member.id"
                 class="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
               >
@@ -142,7 +144,7 @@
 
                   <button
                     v-if="canRemoveMember(member)"
-                    @click="confirmRemoveMember(member)"
+                    @click="openRemoveMemberModal(member)"
                     class="p-2 text-gray-400 hover:text-red-500 transition-colors"
                     title="Удалить из группы"
                   >
@@ -152,6 +154,10 @@
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div v-else class="text-center py-8 text-gray-500">
+              В группе пока нет участников
             </div>
 
             <div v-if="group && isOwner" class="mt-6 p-4 bg-yellow-50 rounded-lg">
@@ -172,7 +178,7 @@
                   Это действие нельзя отменить. Все расходы и данные группы будут безвозвратно удалены.
                 </p>
                 <button
-                  @click="confirmDeleteGroup"
+                  @click="openDeleteGroupModal"
                   class="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                 >
                   Удалить группу
@@ -185,7 +191,7 @@
                   Вы перестанете видеть расходы группы и не сможете их добавлять.
                 </p>
                 <button
-                  @click="confirmLeaveGroup"
+                  @click="openLeaveGroupModal"
                   class="px-6 py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors"
                 >
                   Покинуть группу
@@ -205,6 +211,42 @@
         @close="showInviteForm = false"
         @submit="handleInviteUser"
       />
+
+      <!-- Модалка подтверждения удаления участника -->
+      <ConfirmModal
+        v-if="showRemoveMemberModal"
+        type="danger"
+        title="Удалить участника"
+        :message="`Вы уверены, что хотите удалить ${selectedMember?.first_name || selectedMember?.username} из группы?`"
+        confirm-text="Удалить"
+        :loading="removeMemberLoading"
+        @confirm="confirmRemoveMember"
+        @cancel="showRemoveMemberModal = false"
+      />
+
+      <!-- Модалка подтверждения удаления группы -->
+      <ConfirmModal
+        v-if="showDeleteGroupModal"
+        type="danger"
+        title="Удалить группу"
+        message="Вы уверены? Это действие нельзя отменить! Все расходы и данные группы будут безвозвратно удалены."
+        confirm-text="Удалить группу"
+        :loading="deleteGroupLoading"
+        @confirm="confirmDeleteGroup"
+        @cancel="showDeleteGroupModal = false"
+      />
+
+      <!-- Модалка подтверждения выхода из группы -->
+      <ConfirmModal
+        v-if="showLeaveGroupModal"
+        type="warning"
+        title="Покинуть группу"
+        message="Вы уверены, что хотите покинуть группу? Вы перестанете видеть расходы группы и не сможете их добавлять."
+        confirm-text="Покинуть"
+        :loading="leaveGroupLoading"
+        @confirm="confirmLeaveGroup"
+        @cancel="showLeaveGroupModal = false"
+      />
     </div>
   </div>
 </template>
@@ -214,14 +256,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import groupsApi from '../../api/groups'
 import InviteForm from '../../components/groups/InviteForm.vue'
+import ConfirmModal from '../../components/ui/ConfirmModal.vue'
 import { useAuth } from '../../composables/useAuth'
 import { useNotification } from '../../composables/useNotification'
-
 
 const router = useRouter()
 const route = useRoute()
 const { user } = useAuth()
-const { showSuccess, showWarning, showError, handleApiError } = useNotification()
+const { showSuccess, showError, handleApiError } = useNotification()
 const groupId = route.params.groupId
 
 const group = ref(null)
@@ -239,6 +281,14 @@ const updateError = ref('')
 const showInviteForm = ref(false)
 const inviteLoading = ref(false)
 const inviteError = ref('')
+
+const showRemoveMemberModal = ref(false)
+const showDeleteGroupModal = ref(false)
+const showLeaveGroupModal = ref(false)
+const selectedMember = ref(null)
+const removeMemberLoading = ref(false)
+const deleteGroupLoading = ref(false)
+const leaveGroupLoading = ref(false)
 
 const userRole = computed(() => {
   if (!group.value?.users) return null
@@ -321,53 +371,64 @@ const changeRole = async (member) => {
   }
 }
 
-const confirmRemoveMember = (member) => {
-  if (confirm(`Удалить ${member.first_name || member.username} из группы?`)) {
-    removeMember(member)
-  }
+const openRemoveMemberModal = (member) => {
+  selectedMember.value = member
+  showRemoveMemberModal.value = true
 }
 
-const removeMember = async (member) => {
+const confirmRemoveMember = async () => {
+  if (!selectedMember.value) return
+  
+  removeMemberLoading.value = true
   try {
-    await groupsApi.removeUser(groupId, member.id)
+    await groupsApi.removeUser(groupId, selectedMember.value.id)
     await loadGroup()
     showSuccess('Пользователь удален из группы')
+    showRemoveMemberModal.value = false
   } catch (err) {
     handleApiError(err, 'Ошибка удаления пользователя')
+  } finally {
+    removeMemberLoading.value = false
+    selectedMember.value = null
   }
 }
 
-const confirmDeleteGroup = () => {
-  if (confirm('Вы уверены? Это действие нельзя отменить!')) {
-    deleteGroup()
-  }
+const openDeleteGroupModal = () => {
+  showDeleteGroupModal.value = true
 }
 
-const deleteGroup = async () => {
+const confirmDeleteGroup = async () => {
+  deleteGroupLoading.value = true
   try {
     await groupsApi.deleteGroup(groupId)
     showSuccess('Группа успешно удалена')
     router.push('/dashboard')
   } catch (err) {
     handleApiError(err, 'Ошибка удаления группы')
+    showDeleteGroupModal.value = false
+  } finally {
+    deleteGroupLoading.value = false
   }
 }
 
-const confirmLeaveGroup = () => {
-  if (confirm('Вы уверены, что хотите покинуть группу?')) {
-    leaveGroup()
-  }
+const openLeaveGroupModal = () => {
+  showLeaveGroupModal.value = true
 }
 
-const leaveGroup = async () => {
+const confirmLeaveGroup = async () => {
+  leaveGroupLoading.value = true
   try {
     await groupsApi.leaveGroup(groupId)
     showSuccess('Вы покинули группу')
     router.push('/dashboard')
   } catch (err) {
     handleApiError(err, 'Ошибка при выходе из группы')
+    showLeaveGroupModal.value = false
+  } finally {
+    leaveGroupLoading.value = false
   }
 }
+
 const goBack = () => {
   router.push(`/groups/${groupId}`)
 }
