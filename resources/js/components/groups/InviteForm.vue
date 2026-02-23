@@ -115,7 +115,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'submit'])
-const { showWarning } = useNotification()
+const { showSuccess, showError, showWarning, showInfo, handleApiError } = useNotification()
 
 const searchQuery = ref('')
 const selectedUser = ref(null)
@@ -127,6 +127,7 @@ const form = reactive({
 const handleUserSelect = (user) => {
   selectedUser.value = user
   form.email_or_username = user.email || user.username || ''
+  showInfo(`Выбран пользователь: ${user.full_name || user.email}`)
 }
 
 const handleSubmit = () => {
@@ -134,6 +135,12 @@ const handleSubmit = () => {
     showWarning('Пожалуйста, выберите пользователя из списка')
     return
   }
+  
+  if (!form.email_or_username) {
+    showError('Не удалось определить email или username пользователя')
+    return
+  }
+  
   emit('submit', { 
     email_or_username: form.email_or_username,
     role: form.role 
