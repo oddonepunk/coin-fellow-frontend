@@ -153,12 +153,17 @@ const showExpenseForm = ref(false)
 const loadGroupData = async () => {
   loading.value = true
   try {
+    // Загружаем только группу, без расходов
     const groupResponse = await groupsApi.getGroup(groupId)
     group.value = groupResponse.data || groupResponse
-
-    const expensesResponse = await expensesApi.getGroupExpenses(groupId)
-    expenses.value = expensesResponse.data || expensesResponse
+    console.log('✅ Группа загружена:', group.value)
+    
+    
+    // const expensesResponse = await expensesApi.getGroupExpenses(groupId)
+    // expenses.value = expensesResponse.data || expensesResponse
+    
   } catch (err) {
+    console.error('❌ Ошибка загрузки группы:', err)
     handleApiError(err, 'Ошибка загрузки данных')
   } finally {
     loading.value = false
@@ -166,14 +171,24 @@ const loadGroupData = async () => {
 }
 
 const handleCreateExpense = async (expenseData) => {
+  console.log('📝 Создание расхода с данными:', expenseData)
   expenseLoading.value = true
   expenseError.value = ''
+  
   try {
-    await expensesApi.createExpense(groupId, expenseData)
+    console.log('📡 Отправка запроса к API...')
+    const response = await expensesApi.createExpense(groupId, expenseData)
+    console.log('✅ Ответ от API:', response)
+    
     showExpenseForm.value = false
     await loadGroupData()
     showSuccess('Расход успешно добавлен')
   } catch (err) {
+    console.error('❌ Детали ошибки:', err)
+    console.error('Статус:', err.response?.status)
+    console.error('Данные ошибки:', err.response?.data)
+    console.error('Заголовки:', err.response?.headers)
+    
     expenseError.value = err.response?.data?.message || 'Ошибка создания расхода'
     handleApiError(err, 'Ошибка при создании расхода')
   } finally {
