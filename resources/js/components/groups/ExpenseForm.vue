@@ -22,40 +22,29 @@
             type="text"
             required
             class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Что купили?"
+            placeholder="На что потратили?"
           >
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Сумма *</label>
-          <input
-            v-model.number="form.amount"
-            type="number"
-            step="0.01"
-            required
-            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
-            placeholder="0.00"
-          >
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Кто платил? *</label>
-          <select
-            v-model="form.payer_id"
-            required
-            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500 bg-white"
-          >
-            <option value="">Выберите участника</option>
-            <option v-for="member in members" :key="member.id" :value="member.id">
-              {{ member.first_name || member.username }}
-            </option>
-          </select>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">₽</span>
+            <input
+              v-model.number="form.amount"
+              type="number"
+              step="0.01"
+              required
+              class="w-full pl-9 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
+              placeholder="0.00"
+            >
+          </div>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Категория</label>
           <select
-            v-model="form.category_id"
+            v-model="form.categoryId"
             class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500 bg-white"
           >
             <option value="">Без категории</option>
@@ -72,6 +61,25 @@
             type="date"
             class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
           >
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Участники</label>
+          <p class="text-xs text-gray-500 mb-2">Если не выбраны, расход делится на всех участников группы</p>
+          <div class="max-h-40 overflow-y-auto border-2 border-gray-300 rounded-lg p-2">
+            <div v-for="member in members" :key="member.id" class="flex items-center p-2 hover:bg-gray-50">
+              <input
+                type="checkbox"
+                :id="`member-${member.id}`"
+                :value="member.id"
+                v-model="form.participants"
+                class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+              >
+              <label :for="`member-${member.id}`" class="ml-3 text-sm text-gray-700">
+                {{ member.first_name || member.username }}
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="flex space-x-3 pt-4">
@@ -97,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 
 const props = defineProps({
   groupId: {
@@ -136,12 +144,19 @@ const categories = [
 const form = reactive({
   description: '',
   amount: null,
-  payer_id: '',
-  category_id: '',
-  date: new Date().toISOString().split('T')[0]
+  categoryId: '',
+  date: new Date().toISOString().split('T')[0],
+  participants: []
 })
 
 const handleSubmit = () => {
-  emit('submit', { ...form })
+  const submitData = {
+    description: form.description,
+    amount: form.amount,
+    date: form.date,
+    categoryId: form.categoryId || null,
+    participants: form.participants.length ? form.participants : null
+  }
+  emit('submit', submitData)
 }
 </script>
