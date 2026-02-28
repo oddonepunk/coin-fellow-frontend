@@ -1,7 +1,31 @@
 import { useToast } from "vue-toastification";
 
 export function useNotification() {
-    const toast = useToast()
+    console.log('📢 useNotification инициализация...')
+    
+    let toast
+    try {
+        toast = useToast()
+        console.log('✅ Toast получен:', !!toast)
+        
+        // Тестовое уведомление при инициализации
+        setTimeout(() => {
+            toast.info('📢 Система уведомлений работает!', {
+                timeout: 3000,
+                position: 'top-right'
+            })
+        }, 1000)
+        
+    } catch (e) {
+        console.error('❌ Ошибка получения toast:', e)
+        // Заглушка
+        toast = {
+            success: (msg) => alert('✅ ' + msg),
+            error: (msg) => alert('❌ ' + msg),
+            warning: (msg) => alert('⚠️ ' + msg),
+            info: (msg) => alert('ℹ️ ' + msg)
+        }
+    }
 
     const handleApiError = (error, customMessage = '') => {
         console.error('API Error:', error)
@@ -33,6 +57,8 @@ export function useNotification() {
     }
 
     const showSuccess = (message) => {
+        console.log('✅ showSuccess вызван с сообщением:', message)
+        console.log('   toast.success доступен?', typeof toast.success === 'function')
         toast.success(message, {
             timeout: 4000,
             position: 'top-right'
@@ -40,6 +66,7 @@ export function useNotification() {
     }
 
     const showWarning = (message) => {
+        console.log('⚠️ showWarning вызван с сообщением:', message)
         toast.warning(message, {  
             timeout: 5000,
             position: 'top-right'
@@ -47,6 +74,7 @@ export function useNotification() {
     }
 
     const showInfo = (message) => {
+        console.log('ℹ️ showInfo вызван с сообщением:', message)
         toast.info(message, {
             timeout: 3000,
             position: 'top-right'
@@ -54,6 +82,7 @@ export function useNotification() {
     }
 
     const showError = (message) => {
+        console.error('❌ showError вызван с сообщением:', message)
         toast.error(message, {
             timeout: 7000,
             position: 'top-right'

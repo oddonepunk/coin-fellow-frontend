@@ -30,9 +30,22 @@ export default {
   },
 
   async inviteUser(groupId, inviteData) {
+  console.log('📡 API: inviteUser вызван', { groupId, inviteData })
+  try {
+    console.log('   URL:', `/groups/${groupId}/invite`)
+    console.log('   Данные:', inviteData)
     const response = await apiClient.post(`/groups/${groupId}/invite`, inviteData)
+    console.log('📡 API: inviteUser ответ получен', response)
+    console.log('   Статус:', response.status)
+    console.log('   Данные:', response.data)
     return response.data
-  },
+  } catch (error) {
+    console.error('📡 API: inviteUser ошибка', error)
+    console.error('   Статус:', error.response?.status)
+    console.error('   Данные:', error.response?.data)
+    throw error
+  }
+},
 
   async removeUser(groupId, userId) {
     const response = await apiClient.delete(`/groups/${groupId}/members/${userId}`)
