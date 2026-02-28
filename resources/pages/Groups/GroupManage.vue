@@ -337,17 +337,36 @@ const handleUpdateGroup = async () => {
 }
 
 const handleInviteUser = async (inviteData) => {
+  console.log('🔥 handleInviteUser НАЧАЛО')
   inviteLoading.value = true
   inviteError.value = ''
+  
   try {
-    await groupsApi.inviteUser(groupId, inviteData)
+    console.log('📡 Отправка запроса...')
+    const response = await groupsApi.inviteUser(groupId, inviteData)
+    console.log('✅ Ответ получен:', response)
+    
     showInviteForm.value = false
     await loadGroup()
-    showSuccess('Пользователь успешно приглашен в группу')
+    
+    // Прямая проверка showSuccess
+    console.log('🎉 showSuccess доступна?', !!showSuccess)
+    if (typeof showSuccess === 'function') {
+      console.log('✅ showSuccess - это функция, вызываем...')
+      showSuccess('Пользователь успешно приглашен в группу')
+      console.log('✅ showSuccess вызвана')
+    } else {
+      console.error('❌ showSuccess не является функцией!')
+      // Запасной вариант
+      alert('✅ Пользователь успешно приглашен в группу')
+    }
+    
   } catch (err) {
+    console.error('❌ Ошибка:', err)
     inviteError.value = err.response?.data?.message || 'Ошибка приглашения'
     handleApiError(err, 'Ошибка при приглашении пользователя')
   } finally {
+    console.log('🏁 Завершение, loading = false')
     inviteLoading.value = false
   }
 }
