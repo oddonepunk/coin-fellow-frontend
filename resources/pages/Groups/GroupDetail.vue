@@ -79,6 +79,36 @@
                 </div>
               </div>
             </div>
+
+            <div v-else class="space-y-4">
+              <div
+                v-for="expense in expenses"
+                :key="expense.id"
+                class="border-b border-gray-100 last:border-0 pb-4 last:pb-0 hover:bg-gray-50 p-3 rounded-lg transition-colors"
+              >
+                <div class="flex items-start justify-between">
+                  <div class="flex items-start space-x-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                      {{ getCategoryIcon(expense.category?.name) }}
+                    </div>
+                    <div>
+                      <p class="font-medium text-gray-900">{{ expense.description }}</p>
+                      <p class="text-sm text-gray-500">
+                        {{ expense.payer?.first_name || expense.payer?.username }} платил •
+                        {{ formatDate(expense.date) }}
+                      </p>
+                      <p v-if="expense.participants?.length" class="text-xs text-gray-400 mt-1">
+                        Участники: {{ expense.participants.map(p => p.first_name || p.username).join(', ') }}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-bold text-gray-900">{{ formatNumber(expense.amount) }} {{ group?.currency }}</p>
+                    <p class="text-xs text-gray-500">{{ expense.category?.name || 'Без категории' }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -142,6 +172,11 @@ const route = useRoute()
 const { user } = useAuth()
 const { showSuccess, handleApiError } = useNotification()
 const groupId = route.params.groupId
+
+const notification = useNotification()
+const showSuccess = notification.showSuccess
+const showError = notification.showError
+const handleApiError = notification.handleApiError
 
 const group = ref(null)
 const expenses = ref([])
@@ -243,5 +278,6 @@ const getUserInitials = (member) => {
 
 onMounted(() => {
   loadGroupData()
+  loadExpenses()
 })
 </script>
