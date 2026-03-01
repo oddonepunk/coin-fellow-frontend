@@ -14,6 +14,7 @@ export default {
       throw error
     }
   },
+  
   async createGroup(groupData) {
     const response = await apiClient.post('/groups', groupData)
     return response.data
@@ -30,22 +31,13 @@ export default {
   },
 
   async inviteUser(groupId, inviteData) {
-  console.log('📡 API: inviteUser вызван', { groupId, inviteData })
-  try {
-    console.log('   URL:', `/groups/${groupId}/invite`)
-    console.log('   Данные:', inviteData)
-    const response = await apiClient.post(`/groups/${groupId}/invite`, inviteData)
-    console.log('📡 API: inviteUser ответ получен', response)
-    console.log('   Статус:', response.status)
-    console.log('   Данные:', response.data)
-    return response.data
-  } catch (error) {
-    console.error('📡 API: inviteUser ошибка', error)
-    console.error('   Статус:', error.response?.status)
-    console.error('   Данные:', error.response?.data)
-    throw error
-  }
-},
+    try {
+      const response = await apiClient.post(`/groups/${groupId}/invite`, inviteData)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
 
   async removeUser(groupId, userId) {
     const response = await apiClient.delete(`/groups/${groupId}/members/${userId}`)
@@ -58,19 +50,19 @@ export default {
   },
 
   async updateUserRole(groupId, userId, data) {
-  const response = await apiClient.put(`/groups/${groupId}/members/${userId}`, data)
-  return response.data
-},
+    const response = await apiClient.put(`/groups/${groupId}/members/${userId}`, data)
+    return response.data
+  },
 
-async getExpenseCategories() {
-  const response = await apiClient.get('/categories/all')
-  return response.data
-},
+  async getExpenseCategories() {
+    const response = await apiClient.get('/categories/all')
+    return response.data
+  },
 
-async getBudgetRecommendations(groupId) {
-  const response = await apiClient.get(`/groups/${groupId}/budgets/recommendations`)
-  return response.data
-},
+  async getBudgetRecommendations(groupId) {
+    const response = await apiClient.get(`/groups/${groupId}/budgets/recommendations`)
+    return response.data
+  },
 
   async getGroupExpenses(groupId, params = {}) {
     const response = await apiClient.get(`/groups/${groupId}/expenses`, { params })
@@ -112,7 +104,6 @@ async getBudgetRecommendations(groupId) {
     return response.data
   },
 
-  // Аналитика группы
   async getGroupAnalytics(groupId) {
     const response = await apiClient.get(`/analytics/groups/${groupId}/dashboard`)
     return response.data
@@ -131,14 +122,5 @@ async getBudgetRecommendations(groupId) {
   async getSpendingTrend(groupId) {
     const response = await apiClient.get(`/analytics/groups/${groupId}/spending-trend`)
     return response.data
-  },
-
-  async getBudgetRecommendations(groupId) {
-    const response = await apiClient.get(`/groups/${groupId}/budgets/recommendations`)
-    return response.data
   }
-
-
-
-
 }
