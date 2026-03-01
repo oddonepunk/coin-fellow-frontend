@@ -6,10 +6,17 @@ export default {
     return response.data
   },
 
-  async createExpense(groupId, expenseData) {
+async createExpense(groupId, expenseData) {
+  console.log('📡 API createExpense:', { groupId, expenseData })
+  try {
     const response = await apiClient.post(`/groups/${groupId}/expenses`, expenseData)
+    console.log('📡 API ответ:', response)
     return response.data
-  },
+  } catch (error) {
+    console.error('📡 API ошибка:', error.response?.data)
+    throw error
+  }
+},
 
   async updateExpense(groupId, expenseId, expenseData) {
     const response = await apiClient.put(`/groups/${groupId}/expenses/${expenseId}`, expenseData)
