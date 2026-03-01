@@ -270,13 +270,31 @@ const loadGroupData = async () => {
 }
 
 const loadExpenses = async () => {
+  console.log('📥 Начало загрузки расходов для группы:', groupId)
   expensesLoading.value = true
   try {
+    console.log('📡 Отправка запроса к API...')
     const response = await expensesApi.getGroupExpenses(groupId)
+    console.log('✅ API ответ получен:', response)
+    console.log('📊 Структура ответа:', {
+      hasData: !!response.data,
+      dataType: typeof response.data,
+      isArray: Array.isArray(response.data),
+      responseKeys: Object.keys(response)
+    })
+    
     expenses.value = response.data || response
+    console.log('📦 Установлены expenses:', expenses.value)
   } catch (err) {
+    console.error('❌ Ошибка загрузки расходов:')
+    console.error('   Статус:', err.response?.status)
+    console.error('   Данные ошибки:', err.response?.data)
+    console.error('   Заголовки:', err.response?.headers)
+    console.error('   Полная ошибка:', err)
+    
     handleApiError(err, 'Ошибка загрузки расходов')
   } finally {
+    console.log('🏁 Загрузка расходов завершена')
     expensesLoading.value = false
   }
 }
