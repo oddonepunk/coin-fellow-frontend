@@ -2,8 +2,17 @@ import apiClient from './apiClient'
 
 export default {
   async getGroupExpenses(groupId, params = {}) {
-    const response = await apiClient.get(`/groups/${groupId}/expenses`, { params })
-    return response.data
+    console.log('📡 API: getGroupExpenses вызван для группы:', groupId)
+    try {
+      const response = await apiClient.get(`/groups/${groupId}/expenses`, { params })
+      console.log('📡 API: getGroupExpenses ответ:', response)
+      return response.data
+    } catch (error) {
+      console.error('📡 API: getGroupExpenses ошибка:', error)
+      console.error('   Статус:', error.response?.status)
+      console.error('   Данные:', error.response?.data)
+      throw error
+    }
   },
 
 async createExpense(groupId, expenseData) {
