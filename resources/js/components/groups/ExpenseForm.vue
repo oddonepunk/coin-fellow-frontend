@@ -22,7 +22,7 @@
             type="text"
             required
             class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Что купили?"
+            placeholder="На что потратили?"
           >
         </div>
 
@@ -39,20 +39,6 @@
               placeholder="0.00"
             >
           </div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Кто платил? *</label>
-          <select
-            v-model="form.payer_id"
-            required
-            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500 bg-white"
-          >
-            <option value="">Выберите участника</option>
-            <option v-for="member in members" :key="member.id" :value="member.id">
-              {{ member.first_name || member.username }}
-            </option>
-          </select>
         </div>
 
         <div>
@@ -119,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 
 const props = defineProps({
   groupId: {
@@ -158,7 +144,6 @@ const categories = [
 const form = reactive({
   description: '',
   amount: null,
-  payer_id: '',
   categoryId: '',
   date: new Date().toISOString().split('T')[0],
   participants: []
@@ -168,12 +153,10 @@ const handleSubmit = () => {
   const submitData = {
     description: form.description,
     amount: form.amount,
-    payer_id: form.payer_id,
     date: form.date,
     categoryId: form.categoryId || null,
     participants: form.participants.length ? form.participants : null
   }
-  console.log('📤 Отправка данных расхода:', submitData)
   emit('submit', submitData)
 }
 </script>
