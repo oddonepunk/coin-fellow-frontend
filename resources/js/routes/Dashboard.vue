@@ -107,6 +107,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useDashboard } from '../composables/useDashboard'
 import { useGroups } from '../composables/useGroups'
+import { useNotification } from '../composables/useNotification'
 
 import Sidebar from '../components/layout/Sidebar.vue'
 import DashboardHeader from '../components/layout/DashboardHeader.vue'
@@ -120,6 +121,8 @@ import CreateGroupModal from '../components/groups/CreateGroupModal.vue'
 
 const router = useRouter()
 const { isAuthenticated, checkAuth } = useAuth()
+const { showSuccess, showError, handleApiError } = useNotification()
+
 const {
   loading: dashboardLoading,
   error: dashboardError,
@@ -193,9 +196,9 @@ const handleAddExpense = async () => {
     newExpense.description = ''
     newExpense.groupId = ''
     closeAddExpenseModal()
-    alert('Транзакция успешно добавлена!')
+    showSuccess('Транзакция успешно добавлена')
   } catch (err) {
-    alert(err.message || 'Ошибка при добавлении транзакции')
+    handleApiError(err, 'Ошибка при добавлении транзакции')
   }
 }
 
@@ -211,9 +214,9 @@ const handleCreateGroup = async (groupData) => {
   try {
     await createGroup(groupData)
     closeCreateGroupModal()
-    alert(`Группа "${groupData.name}" создана!`)
+    showSuccess(`Группа "${groupData.name}" создана`)
   } catch (err) {
-    alert(err.message || 'Ошибка при создании группы')
+    handleApiError(err, 'Ошибка при создании группы')
   }
 }
 
@@ -221,11 +224,10 @@ const handleOpenGroup = (groupId) => {
   if (!groupId) {
     return
   }
-  
   try {
     router.push(`/groups/${groupId}`)
   } catch (error) {
-    console.error('Ошибка при переходе:', error)
+    handleApiError(error, 'Ошибка при переходе')
   }
 }
 
