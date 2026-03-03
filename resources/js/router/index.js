@@ -3,6 +3,7 @@ import Dashboard from '../routes/Dashboard.vue'
 import Login from '../pages/Login.vue'
 import Register from '../pages/Register.vue'
 import GroupDetail from '../pages/Groups/GroupDetail.vue'
+import GroupManage from '../pages/Groups/GroupManage.vue'
 
 const routes = [
   {
@@ -23,6 +24,12 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/groups/:groupId/manage',
+    name: 'GroupManage',
+    component: GroupManage,
     meta: { requiresAuth: true }
   },
   {
