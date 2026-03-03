@@ -3,7 +3,7 @@
     <div class="px-4 lg:px-6">
       <div class="hidden lg:flex items-center justify-between h-16">
         <div class="flex items-center space-x-4">
-          <h2 class="text-xl font-bold text-gray-900">Дашборд</h2>
+          <h2 class="text-xl font-bold text-gray-900">Главная</h2>
           <div class="h-6 w-px bg-gray-300"></div>
           <div class="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
             <button
