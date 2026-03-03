@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl max-w-md w-full p-6">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
         <h3 class="text-xl font-bold text-gray-900">Добавить расход</h3>
         <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
@@ -81,18 +81,57 @@
           <label class="block text-sm font-medium text-gray-700 mb-2">Участники</label>
           <p class="text-xs text-gray-500 mb-2">Если не выбраны, расход делится на всех участников группы</p>
           
-          <div class="mb-3">
-            <UserSearchInput
-              v-model="searchQuery"
-              :exclude-group-id="groupId"
-              :members-only="true"
-              :group-members="members"
-              @select="addParticipant"
-              placeholder="Поиск участников для добавления..."
-            />
+          <!-- Поиск участников -->
+          <div class="relative mb-3">
+            <div class="relative">
+              <input
+                v-model="searchQuery"
+                @input="searchMembers"
+                @focus="showSearchResults = true"
+                type="text"
+                class="w-full px-4 py-2 pl-10 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Поиск участников..."
+              />
+              <svg 
+                class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <div v-if="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              </div>
+            </div>
+
+            <!-- Результаты поиска -->
+            <div
+              v-if="showSearchResults && searchResults.length > 0"
+              class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 max-h-60 overflow-y-auto"
+            >
+              <div
+                v-for="member in searchResults"
+                :key="member.id"
+                class="p-2 hover:bg-gray-50 cursor-pointer transition-colors border-b last:border-b-0 flex items-center justify-between"
+                @click="addParticipant(member)"
+              >
+                <div class="flex items-center">
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold">
+                    {{ getMemberInitials(member) }}
+                  </div>
+                  <span class="ml-2 text-sm text-gray-700">
+                    {{ member.first_name || member.username }}
+                  </span>
+                </div>
+                <span v-if="isParticipantSelected(member.id)" class="text-xs text-green-600">✓ добавлен</span>
+                <span v-else class="text-xs text-blue-600">+ добавить</span>
+              </div>
+            </div>
           </div>
 
-          <div class="border-2 border-gray-300 rounded-lg p-2 max-h-40 overflow-y-auto">
+          <!-- Список выбранных участников -->
+          <div class="border-2 border-gray-300 rounded-lg p-2 min-h-[100px] max-h-40 overflow-y-auto">
             <div v-if="form.participants.length === 0" class="text-center py-4 text-gray-400 text-sm">
               Участники не выбраны. Расход будет разделен на всех.
             </div>
@@ -145,8 +184,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import UserSearchInput from './UserSearchInput.vue'
+import { ref, reactive, computed } from 'vue'
 
 const props = defineProps({
   groupId: {
@@ -170,6 +208,10 @@ const props = defineProps({
 const emit = defineEmits(['close', 'submit'])
 
 const searchQuery = ref('')
+const searchLoading = ref(false)
+const showSearchResults = ref(false)
+const searchResults = ref([])
+
 const categories = [
   { id: 1, name: 'Продукты' },
   { id: 2, name: 'Транспорт' },
@@ -192,14 +234,42 @@ const form = reactive({
   participants: []
 })
 
-const addParticipant = (user) => {
-  if (!form.participants.includes(user.id)) {
-    form.participants.push(user.id)
+const searchMembers = () => {
+  if (!searchQuery.value.trim()) {
+    searchResults.value = []
+    showSearchResults.value = false
+    return
   }
+
+  searchLoading.value = true
+  setTimeout(() => {
+    const query = searchQuery.value.toLowerCase()
+    searchResults.value = props.members.filter(member => 
+      (member.first_name?.toLowerCase().includes(query) ||
+       member.last_name?.toLowerCase().includes(query) ||
+       member.username?.toLowerCase().includes(query) ||
+       member.email?.toLowerCase().includes(query)) &&
+      !form.participants.includes(member.id)
+    ).slice(0, 5)
+    searchLoading.value = false
+  }, 300)
+}
+
+const addParticipant = (member) => {
+  if (!form.participants.includes(member.id)) {
+    form.participants.push(member.id)
+  }
+  searchQuery.value = ''
+  searchResults.value = []
+  showSearchResults.value = false
 }
 
 const removeParticipant = (userId) => {
   form.participants = form.participants.filter(id => id !== userId)
+}
+
+const isParticipantSelected = (userId) => {
+  return form.participants.includes(userId)
 }
 
 const getMemberById = (id) => {
@@ -236,7 +306,6 @@ const handleSubmit = () => {
     categoryId: form.categoryId || null,
     participants: form.participants.length ? form.participants : null
   }
-  console.log('📤 Отправка данных расхода:', submitData)
   emit('submit', submitData)
 }
 </script>
