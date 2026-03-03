@@ -42,6 +42,20 @@
         </div>
 
         <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Кто платил? *</label>
+          <select
+            v-model="form.payer_id"
+            required
+            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500 bg-white"
+          >
+            <option value="">Выберите участника</option>
+            <option v-for="member in members" :key="member.id" :value="member.id">
+              {{ member.first_name || member.username }}
+            </option>
+          </select>
+        </div>
+
+        <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Категория</label>
           <select
             v-model="form.categoryId"
@@ -66,18 +80,44 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Участники</label>
           <p class="text-xs text-gray-500 mb-2">Если не выбраны, расход делится на всех участников группы</p>
-          <div class="max-h-40 overflow-y-auto border-2 border-gray-300 rounded-lg p-2">
-            <div v-for="member in members" :key="member.id" class="flex items-center p-2 hover:bg-gray-50">
-              <input
-                type="checkbox"
-                :id="`member-${member.id}`"
-                :value="member.id"
-                v-model="form.participants"
-                class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+          
+          <div class="mb-3">
+            <UserSearchInput
+              v-model="searchQuery"
+              :exclude-group-id="groupId"
+              :members-only="true"
+              :group-members="members"
+              @select="addParticipant"
+              placeholder="Поиск участников для добавления..."
+            />
+          </div>
+
+          <div class="border-2 border-gray-300 rounded-lg p-2 max-h-40 overflow-y-auto">
+            <div v-if="form.participants.length === 0" class="text-center py-4 text-gray-400 text-sm">
+              Участники не выбраны. Расход будет разделен на всех.
+            </div>
+            <div
+              v-for="participantId in form.participants"
+              :key="participantId"
+              class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
+            >
+              <div class="flex items-center">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold">
+                  {{ getMemberInitials(getMemberById(participantId)) }}
+                </div>
+                <span class="ml-3 text-sm text-gray-700">
+                  {{ getMemberName(getMemberById(participantId)) }}
+                </span>
+              </div>
+              <button
+                type="button"
+                @click="removeParticipant(participantId)"
+                class="text-gray-400 hover:text-red-500 transition-colors"
               >
-              <label :for="`member-${member.id}`" class="ml-3 text-sm text-gray-700">
-                {{ member.first_name || member.username }}
-              </label>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -105,7 +145,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
+import UserSearchInput from './UserSearchInput.vue'
 
 const props = defineProps({
   groupId: {
@@ -128,6 +169,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'submit'])
 
+const searchQuery = ref('')
 const categories = [
   { id: 1, name: 'Продукты' },
   { id: 2, name: 'Транспорт' },
@@ -144,19 +186,57 @@ const categories = [
 const form = reactive({
   description: '',
   amount: null,
+  payer_id: '',
   categoryId: '',
   date: new Date().toISOString().split('T')[0],
   participants: []
 })
 
+const addParticipant = (user) => {
+  if (!form.participants.includes(user.id)) {
+    form.participants.push(user.id)
+  }
+}
+
+const removeParticipant = (userId) => {
+  form.participants = form.participants.filter(id => id !== userId)
+}
+
+const getMemberById = (id) => {
+  return props.members.find(m => m.id === id) || { first_name: 'Неизвестно' }
+}
+
+const getMemberName = (member) => {
+  return member.first_name || member.username || member.email
+}
+
+const getMemberInitials = (member) => {
+  if (!member) return 'U'
+  if (member.first_name && member.last_name) {
+    return (member.first_name[0] + member.last_name[0]).toUpperCase()
+  }
+  if (member.first_name) {
+    return member.first_name[0].toUpperCase()
+  }
+  if (member.username) {
+    return member.username.substring(0, 2).toUpperCase()
+  }
+  if (member.email) {
+    return member.email.substring(0, 2).toUpperCase()
+  }
+  return 'U'
+}
+
 const handleSubmit = () => {
   const submitData = {
     description: form.description,
     amount: form.amount,
+    payer_id: form.payer_id,
     date: form.date,
     categoryId: form.categoryId || null,
     participants: form.participants.length ? form.participants : null
   }
+  console.log('📤 Отправка данных расхода:', submitData)
   emit('submit', submitData)
 }
 </script>
