@@ -185,6 +185,7 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import usersApi from '../../api/users'
 
 const props = defineProps({
   groupId: {
@@ -204,6 +205,7 @@ const props = defineProps({
     default: ''
   }
 })
+
 
 const emit = defineEmits(['close', 'submit'])
 
@@ -234,7 +236,7 @@ const form = reactive({
   participants: []
 })
 
-const searchMembers = () => {
+const searchMembers = async () => {
   if (!searchQuery.value.trim()) {
     searchResults.value = []
     showSearchResults.value = false
@@ -242,17 +244,15 @@ const searchMembers = () => {
   }
 
   searchLoading.value = true
-  setTimeout(() => {
-    const query = searchQuery.value.toLowerCase()
-    searchResults.value = props.members.filter(member => 
-      (member.first_name?.toLowerCase().includes(query) ||
-       member.last_name?.toLowerCase().includes(query) ||
-       member.username?.toLowerCase().includes(query) ||
-       member.email?.toLowerCase().includes(query)) &&
-      !form.participants.includes(member.id)
-    ).slice(0, 5)
+  try {
+    const response = await usersApi.searchGroupMembers(props.groupId, searchQuery.value)
+    searchResults.value = response.data || []
+  } catch (error) {
+    console.error('Ошибка поиска участников:', error)
+    searchResults.value = []
+  } finally {
     searchLoading.value = false
-  }, 300)
+  }
 }
 
 const addParticipant = (member) => {
