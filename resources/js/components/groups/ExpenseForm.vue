@@ -15,6 +15,7 @@
           {{ error }}
         </div>
 
+        <!-- Чекбокс "Я оплатил" -->
         <div class="flex items-center p-3 bg-blue-50 rounded-lg">
           <input
             type="checkbox"
@@ -28,20 +29,104 @@
           </label>
         </div>
 
-        <div>
+        <!-- Поиск плательщика -->
+        <div v-if="!isCurrentUserPayer">
           <label class="block text-sm font-medium text-gray-700 mb-2">Кто платил? *</label>
-          <select
-            v-model="form.payer_id"
-            required
-            :disabled="isCurrentUserPayer"
-            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
-          >
-            <option value="">Выберите участника</option>
-            <option v-for="member in members" :key="member.id" :value="member.id">
-              {{ member.first_name || member.username }}
-              <span v-if="member.id === currentUserId" class="text-blue-600 ml-1">(Вы)</span>
-            </option>
-          </select>
+          
+          <!-- Выбранный плательщик -->
+          <div v-if="selectedPayer" class="mb-3 p-3 bg-blue-50 rounded-lg flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold">
+                {{ selectedPayer.initials || getInitials(selectedPayer) }}
+              </div>
+              <div class="ml-3">
+                <p class="font-medium text-gray-900">{{ selectedPayer.full_name || selectedPayer.display_name || selectedPayer.email }}</p>
+                <p class="text-sm text-gray-500">{{ selectedPayer.email }}</p>
+              </div>
+            </div>
+            <button
+              @click="selectedPayer = null; payerSearchQuery = ''"
+              class="text-gray-400 hover:text-gray-600"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Поиск плательщика -->
+          <div v-if="!selectedPayer" class="relative">
+            <div class="relative">
+              <input
+                v-model="payerSearchQuery"
+                @input="searchPayer"
+                @focus="showPayerResults = true"
+                type="text"
+                class="w-full px-4 py-3 pl-10 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Поиск по имени, email или телефону..."
+              />
+              <svg 
+                class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <div v-if="payerSearchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              </div>
+            </div>
+
+            <!-- Результаты поиска плательщика -->
+            <div
+              v-if="showPayerResults && payerResults.length > 0"
+              class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 max-h-80 overflow-y-auto"
+            >
+              <div
+                v-for="user in payerResults"
+                :key="user.id"
+                class="p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b last:border-b-0"
+                @click="selectPayer(user)"
+              >
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold flex-shrink-0">
+                    {{ user.initials || getInitials(user) }}
+                  </div>
+                  <div class="ml-3 flex-1">
+                    <p class="font-medium text-gray-900">{{ user.full_name || user.display_name || user.email }}</p>
+                    <p class="text-sm text-gray-500">{{ user.email }}</p>
+                  </div>
+                  <div class="ml-2">
+                    <span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                      {{ user.username ? '@' + user.username : '' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-if="showPayerResults && payerSearchLoading && payerResults.length === 0"
+              class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 p-4 text-center"
+            >
+              <div class="flex justify-center">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              </div>
+              <p class="text-sm text-gray-500 mt-2">Поиск пользователей...</p>
+            </div>
+
+            <div
+              v-if="showPayerResults && !payerSearchLoading && payerSearchQuery.length >= 2 && payerResults.length === 0"
+              class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 p-4 text-center"
+            >
+              <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <p class="text-gray-500">Пользователи не найдены</p>
+              <p class="text-sm text-gray-400 mt-1">Попробуйте изменить поисковый запрос</p>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -96,12 +181,13 @@
           <label class="block text-sm font-medium text-gray-700 mb-2">Участники</label>
           <p class="text-xs text-gray-500 mb-2">Если не выбраны, расход делится на всех участников группы</p>
           
+          <!-- Поиск участников -->
           <div class="relative mb-3">
             <div class="relative">
               <input
-                v-model="searchQuery"
-                @input="searchMembers"
-                @focus="showSearchResults = true"
+                v-model="participantSearchQuery"
+                @input="searchParticipants"
+                @focus="showParticipantResults = true"
                 type="text"
                 class="w-full px-4 py-2 pl-10 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
                 placeholder="Поиск участников..."
@@ -114,24 +200,25 @@
               >
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
-              <div v-if="searchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div v-if="participantSearchLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
               </div>
             </div>
 
+            <!-- Результаты поиска участников -->
             <div
-              v-if="showSearchResults && searchResults.length > 0"
+              v-if="showParticipantResults && participantResults.length > 0"
               class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 max-h-60 overflow-y-auto"
             >
               <div
-                v-for="member in searchResults"
+                v-for="member in participantResults"
                 :key="member.id"
                 class="p-2 hover:bg-gray-50 cursor-pointer transition-colors border-b last:border-b-0 flex items-center justify-between"
                 @click="addParticipant(member)"
               >
                 <div class="flex items-center">
                   <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold">
-                    {{ member.initials || getMemberInitials(member) }}
+                    {{ member.initials || getInitials(member) }}
                   </div>
                   <span class="ml-2 text-sm text-gray-700">
                     {{ member.first_name || member.username }}
@@ -144,6 +231,7 @@
             </div>
           </div>
 
+          <!-- Список выбранных участников -->
           <div class="border-2 border-gray-300 rounded-lg p-2 min-h-[100px] max-h-40 overflow-y-auto">
             <div v-if="form.participants.length === 0" class="text-center py-4 text-gray-400 text-sm">
               Участники не выбраны. Расход будет разделен на всех.
@@ -155,7 +243,7 @@
             >
               <div class="flex items-center">
                 <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold">
-                  {{ getMemberInitials(getMemberById(participantId)) }}
+                  {{ getInitials(getMemberById(participantId)) }}
                 </div>
                 <span class="ml-3 text-sm text-gray-700">
                   {{ getMemberName(getMemberById(participantId)) }}
@@ -185,7 +273,7 @@
           </button>
           <button
             type="submit"
-            :disabled="loading"
+            :disabled="loading || (!isCurrentUserPayer && !selectedPayer)"
             class="flex-1 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span v-if="loading" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
@@ -225,11 +313,20 @@ const emit = defineEmits(['close', 'submit'])
 const { user } = useAuth()
 const currentUserId = computed(() => user.value?.id)
 
-const searchQuery = ref('')
-const searchLoading = ref(false)
-const showSearchResults = ref(false)
-const searchResults = ref([])
-const isCurrentUserPayer = ref(true) // По умолчанию true
+// Поиск плательщика
+const payerSearchQuery = ref('')
+const payerSearchLoading = ref(false)
+const showPayerResults = ref(false)
+const payerResults = ref([])
+const selectedPayer = ref(null)
+
+// Поиск участников
+const participantSearchQuery = ref('')
+const participantSearchLoading = ref(false)
+const showParticipantResults = ref(false)
+const participantResults = ref([])
+
+const isCurrentUserPayer = ref(true)
 
 const categories = [
   { id: 1, name: 'Продукты' },
@@ -247,41 +344,59 @@ const categories = [
 const form = reactive({
   description: '',
   amount: null,
-  payer_id: '',
   categoryId: '',
   date: new Date().toISOString().split('T')[0],
   participants: []
 })
 
-//установка текущего пользователя как плательщика по умолчанию
-if (currentUserId.value) {
-  form.payer_id = currentUserId.value
+const searchPayer = async () => {
+  if (!payerSearchQuery.value.trim()) {
+    payerResults.value = []
+    showPayerResults.value = false
+    return
+  }
+
+  payerSearchLoading.value = true
+  try {
+    const response = await usersApi.searchGroupMembers(props.groupId, payerSearchQuery.value)
+    payerResults.value = response.data || []
+  } catch (error) {
+    console.error('Ошибка поиска плательщика:', error)
+    payerResults.value = []
+  } finally {
+    payerSearchLoading.value = false
+  }
+}
+
+const searchParticipants = async () => {
+  if (!participantSearchQuery.value.trim()) {
+    participantResults.value = []
+    showParticipantResults.value = false
+    return
+  }
+
+  participantSearchLoading.value = true
+  try {
+    const response = await usersApi.searchGroupMembers(props.groupId, participantSearchQuery.value)
+    participantResults.value = response.data || []
+  } catch (error) {
+    console.error('Ошибка поиска участников:', error)
+    participantResults.value = []
+  } finally {
+    participantSearchLoading.value = false
+  }
+}
+
+const selectPayer = (user) => {
+  selectedPayer.value = user
+  payerSearchQuery.value = ''
+  payerResults.value = []
+  showPayerResults.value = false
 }
 
 const togglePayer = () => {
   if (isCurrentUserPayer.value) {
-    form.payer_id = currentUserId.value
-  } else {
-    form.payer_id = ''
-  }
-}
-
-const searchMembers = async () => {
-  if (!searchQuery.value.trim()) {
-    searchResults.value = []
-    showSearchResults.value = false
-    return
-  }
-
-  searchLoading.value = true
-  try {
-    const response = await usersApi.searchGroupMembers(props.groupId, searchQuery.value)
-    searchResults.value = response.data || []
-  } catch (error) {
-    console.error('Ошибка поиска участников:', error)
-    searchResults.value = []
-  } finally {
-    searchLoading.value = false
+    selectedPayer.value = null
   }
 }
 
@@ -289,9 +404,9 @@ const addParticipant = (member) => {
   if (!form.participants.includes(member.id)) {
     form.participants.push(member.id)
   }
-  searchQuery.value = ''
-  searchResults.value = []
-  showSearchResults.value = false
+  participantSearchQuery.value = ''
+  participantResults.value = []
+  showParticipantResults.value = false
 }
 
 const removeParticipant = (userId) => {
@@ -310,19 +425,18 @@ const getMemberName = (member) => {
   return member.first_name || member.username || member.email
 }
 
-const getMemberInitials = (member) => {
-  if (!member) return 'U'
-  if (member.first_name && member.last_name) {
-    return (member.first_name[0] + member.last_name[0]).toUpperCase()
+const getInitials = (user) => {
+  if (user.first_name && user.last_name) {
+    return (user.first_name[0] + user.last_name[0]).toUpperCase()
   }
-  if (member.first_name) {
-    return member.first_name[0].toUpperCase()
+  if (user.first_name) {
+    return user.first_name[0].toUpperCase()
   }
-  if (member.username) {
-    return member.username.substring(0, 2).toUpperCase()
+  if (user.username) {
+    return user.username.substring(0, 2).toUpperCase()
   }
-  if (member.email) {
-    return member.email.substring(0, 2).toUpperCase()
+  if (user.email) {
+    return user.email.substring(0, 2).toUpperCase()
   }
   return 'U'
 }
@@ -335,7 +449,18 @@ const handleSubmit = () => {
     categoryId: form.categoryId || null,
     participants: form.participants.length ? form.participants : null
   }
-  //payer_id уже включен в form и отправляется автоматически
-  emit('submit', { ...form, ...submitData })
+  
+  // Определяем payer_id
+  let payerId
+  if (isCurrentUserPayer.value) {
+    payerId = currentUserId.value
+  } else if (selectedPayer.value) {
+    payerId = selectedPayer.value.id
+  }
+  
+  emit('submit', { 
+    ...submitData,
+    payer_id: payerId 
+  })
 }
 </script>
