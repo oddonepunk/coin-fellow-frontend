@@ -15,6 +15,35 @@
           {{ error }}
         </div>
 
+        <div class="flex items-center p-3 bg-blue-50 rounded-lg">
+          <input
+            type="checkbox"
+            id="i-paid"
+            v-model="isCurrentUserPayer"
+            @change="togglePayer"
+            class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+          >
+          <label for="i-paid" class="ml-3 text-sm font-medium text-gray-700">
+            Я оплатил этот счет
+          </label>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Кто платил? *</label>
+          <select
+            v-model="form.payer_id"
+            required
+            :disabled="isCurrentUserPayer"
+            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
+          >
+            <option value="">Выберите участника</option>
+            <option v-for="member in members" :key="member.id" :value="member.id">
+              {{ member.first_name || member.username }}
+              <span v-if="member.id === currentUserId" class="text-blue-600 ml-1">(Вы)</span>
+            </option>
+          </select>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Описание *</label>
           <input
@@ -39,20 +68,6 @@
               placeholder="0.00"
             >
           </div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Кто платил? *</label>
-          <select
-            v-model="form.payer_id"
-            required
-            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500 bg-white"
-          >
-            <option value="">Выберите участника</option>
-            <option v-for="member in members" :key="member.id" :value="member.id">
-              {{ member.first_name || member.username }}
-            </option>
-          </select>
         </div>
 
         <div>
@@ -81,7 +96,6 @@
           <label class="block text-sm font-medium text-gray-700 mb-2">Участники</label>
           <p class="text-xs text-gray-500 mb-2">Если не выбраны, расход делится на всех участников группы</p>
           
-          <!-- Поиск участников -->
           <div class="relative mb-3">
             <div class="relative">
               <input
@@ -105,7 +119,6 @@
               </div>
             </div>
 
-            <!-- Результаты поиска -->
             <div
               v-if="showSearchResults && searchResults.length > 0"
               class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 max-h-60 overflow-y-auto"
@@ -118,10 +131,11 @@
               >
                 <div class="flex items-center">
                   <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold">
-                    {{ getMemberInitials(member) }}
+                    {{ member.initials || getMemberInitials(member) }}
                   </div>
                   <span class="ml-2 text-sm text-gray-700">
                     {{ member.first_name || member.username }}
+                    <span v-if="member.id === currentUserId" class="text-blue-600 ml-1">(Вы)</span>
                   </span>
                 </div>
                 <span v-if="isParticipantSelected(member.id)" class="text-xs text-green-600">✓ добавлен</span>
@@ -130,7 +144,6 @@
             </div>
           </div>
 
-          <!-- Список выбранных участников -->
           <div class="border-2 border-gray-300 rounded-lg p-2 min-h-[100px] max-h-40 overflow-y-auto">
             <div v-if="form.participants.length === 0" class="text-center py-4 text-gray-400 text-sm">
               Участники не выбраны. Расход будет разделен на всех.
@@ -146,6 +159,7 @@
                 </div>
                 <span class="ml-3 text-sm text-gray-700">
                   {{ getMemberName(getMemberById(participantId)) }}
+                  <span v-if="participantId === currentUserId" class="text-blue-600 ml-1">(Вы)</span>
                 </span>
               </div>
               <button
@@ -186,6 +200,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import usersApi from '../../api/users'
+import { useAuth } from '../../composables/useAuth'
 
 const props = defineProps({
   groupId: {
@@ -206,13 +221,15 @@ const props = defineProps({
   }
 })
 
-
 const emit = defineEmits(['close', 'submit'])
+const { user } = useAuth()
+const currentUserId = computed(() => user.value?.id)
 
 const searchQuery = ref('')
 const searchLoading = ref(false)
 const showSearchResults = ref(false)
 const searchResults = ref([])
+const isCurrentUserPayer = ref(true) // По умолчанию true
 
 const categories = [
   { id: 1, name: 'Продукты' },
@@ -235,6 +252,19 @@ const form = reactive({
   date: new Date().toISOString().split('T')[0],
   participants: []
 })
+
+//установка текущего пользователя как плательщика по умолчанию
+if (currentUserId.value) {
+  form.payer_id = currentUserId.value
+}
+
+const togglePayer = () => {
+  if (isCurrentUserPayer.value) {
+    form.payer_id = currentUserId.value
+  } else {
+    form.payer_id = ''
+  }
+}
 
 const searchMembers = async () => {
   if (!searchQuery.value.trim()) {
@@ -301,11 +331,11 @@ const handleSubmit = () => {
   const submitData = {
     description: form.description,
     amount: form.amount,
-    payer_id: form.payer_id,
     date: form.date,
     categoryId: form.categoryId || null,
     participants: form.participants.length ? form.participants : null
   }
-  emit('submit', submitData)
+  //payer_id уже включен в form и отправляется автоматически
+  emit('submit', { ...form, ...submitData })
 }
 </script>
