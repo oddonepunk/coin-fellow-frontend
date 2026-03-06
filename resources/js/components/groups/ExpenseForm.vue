@@ -15,7 +15,6 @@
           {{ error }}
         </div>
 
-        <!-- Чекбокс "Я оплатил" -->
         <div class="flex items-center p-3 bg-blue-50 rounded-lg">
           <input
             type="checkbox"
@@ -29,11 +28,9 @@
           </label>
         </div>
 
-        <!-- Поиск плательщика -->
         <div v-if="!isCurrentUserPayer">
           <label class="block text-sm font-medium text-gray-700 mb-2">Кто платил? *</label>
           
-          <!-- Выбранный плательщик -->
           <div v-if="selectedPayer" class="mb-3 p-3 bg-blue-50 rounded-lg flex items-center justify-between">
             <div class="flex items-center">
               <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white font-bold">
@@ -54,7 +51,6 @@
             </button>
           </div>
 
-          <!-- Поиск плательщика -->
           <div v-if="!selectedPayer" class="relative">
             <div class="relative">
               <input
@@ -78,7 +74,6 @@
               </div>
             </div>
 
-            <!-- Результаты поиска плательщика -->
             <div
               v-if="showPayerResults && payerResults.length > 0"
               class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 max-h-80 overflow-y-auto"
@@ -181,7 +176,6 @@
           <label class="block text-sm font-medium text-gray-700 mb-2">Участники</label>
           <p class="text-xs text-gray-500 mb-2">Если не выбраны, расход делится на всех участников группы</p>
           
-          <!-- Поиск участников -->
           <div class="relative mb-3">
             <div class="relative">
               <input
@@ -205,7 +199,6 @@
               </div>
             </div>
 
-            <!-- Результаты поиска участников -->
             <div
               v-if="showParticipantResults && participantResults.length > 0"
               class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 max-h-60 overflow-y-auto"
@@ -231,7 +224,6 @@
             </div>
           </div>
 
-          <!-- Список выбранных участников -->
           <div class="border-2 border-gray-300 rounded-lg p-2 min-h-[100px] max-h-40 overflow-y-auto">
             <div v-if="form.participants.length === 0" class="text-center py-4 text-gray-400 text-sm">
               Участники не выбраны. Расход будет разделен на всех.
@@ -313,14 +305,12 @@ const emit = defineEmits(['close', 'submit'])
 const { user } = useAuth()
 const currentUserId = computed(() => user.value?.id)
 
-// Поиск плательщика
 const payerSearchQuery = ref('')
 const payerSearchLoading = ref(false)
 const showPayerResults = ref(false)
 const payerResults = ref([])
 const selectedPayer = ref(null)
 
-// Поиск участников
 const participantSearchQuery = ref('')
 const participantSearchLoading = ref(false)
 const showParticipantResults = ref(false)
@@ -450,7 +440,6 @@ const handleSubmit = () => {
     participants: form.participants.length ? form.participants : null
   }
   
-  // Определяем payer_id
   let payerId
   if (isCurrentUserPayer.value) {
     payerId = currentUserId.value
