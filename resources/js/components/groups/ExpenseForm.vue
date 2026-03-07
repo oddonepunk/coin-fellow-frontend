@@ -235,10 +235,10 @@
             >
               <div class="flex items-center">
                 <div class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold">
-                  {{ getInitials(getMemberById(participantId)) }}
+                  {{ getInitials(getParticipantById(participantId)) }}
                 </div>
                 <span class="ml-3 text-sm text-gray-700">
-                  {{ getMemberName(getMemberById(participantId)) }}
+                  {{ getParticipantName(getParticipantById(participantId)) }}
                   <span v-if="participantId === currentUserId" class="text-blue-600 ml-1">(Вы)</span>
                 </span>
               </div>
@@ -305,6 +305,12 @@ const emit = defineEmits(['close', 'submit'])
 const { user } = useAuth()
 const currentUserId = computed(() => user.value?.id)
 
+const membersMap = ref(new Map())
+
+props.members.forEach(member => {
+  membersMap.value.set(member.id, member)
+})
+
 const payerSearchQuery = ref('')
 const payerSearchLoading = ref(false)
 const showPayerResults = ref(false)
@@ -350,6 +356,11 @@ const searchPayer = async () => {
   try {
     const response = await usersApi.searchGroupMembers(props.groupId, payerSearchQuery.value)
     payerResults.value = response.data || []
+    payerResults.value.forEach(user => {
+      if (!membersMap.value.has(user.id)) {
+        membersMap.value.set(user.id, user)
+      }
+    })
   } catch (error) {
     console.error('Ошибка поиска плательщика:', error)
     payerResults.value = []
@@ -369,6 +380,11 @@ const searchParticipants = async () => {
   try {
     const response = await usersApi.searchGroupMembers(props.groupId, participantSearchQuery.value)
     participantResults.value = response.data || []
+    participantResults.value.forEach(user => {
+      if (!membersMap.value.has(user.id)) {
+        membersMap.value.set(user.id, user)
+      }
+    })
   } catch (error) {
     console.error('Ошибка поиска участников:', error)
     participantResults.value = []
@@ -379,6 +395,9 @@ const searchParticipants = async () => {
 
 const selectPayer = (user) => {
   selectedPayer.value = user
+  if (!membersMap.value.has(user.id)) {
+    membersMap.value.set(user.id, user)
+  }
   payerSearchQuery.value = ''
   payerResults.value = []
   showPayerResults.value = false
@@ -393,6 +412,9 @@ const togglePayer = () => {
 const addParticipant = (member) => {
   if (!form.participants.includes(member.id)) {
     form.participants.push(member.id)
+    if (!membersMap.value.has(member.id)) {
+      membersMap.value.set(member.id, member)
+    }
   }
   participantSearchQuery.value = ''
   participantResults.value = []
@@ -407,15 +429,17 @@ const isParticipantSelected = (userId) => {
   return form.participants.includes(userId)
 }
 
-const getMemberById = (id) => {
-  return props.members.find(m => m.id === id) || { first_name: 'Неизвестно' }
+const getParticipantById = (id) => {
+  return membersMap.value.get(id) || { first_name: 'Неизвестно', username: 'неизвестно', email: '' }
 }
 
-const getMemberName = (member) => {
-  return member.first_name || member.username || member.email
+const getParticipantName = (member) => {
+  if (!member) return 'Неизвестно'
+  return member.first_name || member.username || member.email || 'Неизвестно'
 }
 
 const getInitials = (user) => {
+  if (!user) return 'U'
   if (user.first_name && user.last_name) {
     return (user.first_name[0] + user.last_name[0]).toUpperCase()
   }
