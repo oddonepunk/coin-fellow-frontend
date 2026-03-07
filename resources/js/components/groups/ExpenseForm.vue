@@ -479,6 +479,11 @@ const getInitials = (user) => {
 }
 
 const handleSubmit = () => {
+  console.log('💰 Отправка формы расхода')
+  console.log('isCurrentUserPayer:', isCurrentUserPayer.value)
+  console.log('selectedPayer:', selectedPayer.value)
+  console.log('currentUserId:', currentUserId.value)
+  
   const submitData = {
     description: form.description,
     amount: form.amount,
@@ -490,8 +495,12 @@ const handleSubmit = () => {
   let payerId
   if (isCurrentUserPayer.value) {
     payerId = currentUserId.value
+    console.log('✅ Использую текущего пользователя как плательщика:', payerId)
   } else if (selectedPayer.value) {
     payerId = selectedPayer.value.id
+    console.log('✅ Использую выбранного плательщика:', payerId, selectedPayer.value.full_name || selectedPayer.value.email)
+  } else {
+    console.log('❌ Плательщик не выбран!')
   }
   
   emit('submit', { 
