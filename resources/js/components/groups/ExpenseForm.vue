@@ -102,7 +102,7 @@
             </div>
 
             <div
-              v-if="showPayerResults && payerSearchLoading && payerResults.length === 0"
+              v-if="showPayerResults && payerSearchLoading"
               class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 p-4 text-center"
             >
               <div class="flex justify-center">
@@ -200,7 +200,7 @@
             </div>
 
             <div
-              v-if="showParticipantResults && participantResults.length > 0"
+              v-if="participantSearchQuery.length >= 2 && showParticipantResults && participantResults.length > 0"
               class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 max-h-60 overflow-y-auto"
             >
               <div
@@ -221,6 +221,27 @@
                 <span v-if="isParticipantSelected(member.id)" class="text-xs text-green-600">✓ добавлен</span>
                 <span v-else class="text-xs text-blue-600">+ добавить</span>
               </div>
+            </div>
+
+            <div
+              v-if="participantSearchQuery.length >= 2 && showParticipantResults && participantSearchLoading"
+              class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 p-4 text-center"
+            >
+              <div class="flex justify-center">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              </div>
+              <p class="text-sm text-gray-500 mt-2">Поиск участников...</p>
+            </div>
+
+            <div
+              v-if="participantSearchQuery.length >= 2 && showParticipantResults && !participantSearchLoading && participantResults.length === 0"
+              class="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 p-4 text-center"
+            >
+              <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <p class="text-gray-500">Участники не найдены</p>
+              <p class="text-sm text-gray-400 mt-1">Попробуйте изменить поисковый запрос</p>
             </div>
           </div>
 
@@ -361,6 +382,7 @@ const searchPayer = async () => {
         membersMap.value.set(user.id, user)
       }
     })
+    showPayerResults.value = true
   } catch (error) {
     console.error('Ошибка поиска плательщика:', error)
     payerResults.value = []
@@ -385,6 +407,7 @@ const searchParticipants = async () => {
         membersMap.value.set(user.id, user)
       }
     })
+    showParticipantResults.value = true
   } catch (error) {
     console.error('Ошибка поиска участников:', error)
     participantResults.value = []
