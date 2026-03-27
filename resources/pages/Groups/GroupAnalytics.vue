@@ -169,9 +169,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import groupsApi from '../../api/groups'
-import analyticsApi from '../../api/analytics'
-import { useNotification } from '../../composables/useNotification'
+import groupsApi from '../../js/api/groups'
+import analyticsApi from '../../js/api/analytics'
+import { useNotification } from '../../js/composables/useNotification'
 
 const router = useRouter()
 const route = useRoute()
