@@ -30,4 +30,10 @@ export default [
     component: GroupManage,
     meta: { requiresAuth: true }
   },
+  {
+    path: '/groups/:groupId/analytics',
+    name: 'GroupAnalytics',
+    component: () => import('../pages/Groups/GroupAnalytics.vue'),
+    meta: { requiresAuth: true }
+  }
 ]
