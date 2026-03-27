@@ -30,6 +30,16 @@ export default {
     return response.data
   },
 
+  async getGroupStats(groupId) {
+    const response = await apiClient.get(`/groups/${groupId}/stats`)
+    return response.data
+  },
+
+  async getMemberStats(groupId, userId) {
+    const response = await apiClient.get(`/groups/${groupId}/members/${userId}/stats`)
+    return response.data
+  },
+
   async inviteUser(groupId, inviteData) {
     try {
       const response = await apiClient.post(`/groups/${groupId}/invite`, inviteData)

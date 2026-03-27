@@ -34,24 +34,77 @@
         </div>
       </div>
 
-      <div v-if="!loading && group" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white rounded-xl shadow-sm p-5">
+      <!-- Статистика -->
+      <div v-if="!loading && stats" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
           <p class="text-sm text-gray-500 mb-1">Всего расходов</p>
-          <p class="text-2xl font-bold text-gray-900">{{ formatNumber(totalExpenses) }} {{ group?.currency }}</p>
+          <p class="text-2xl font-bold text-gray-900">{{ formatNumber(stats.total_expenses) }} {{ group?.currency }}</p>
+          <p class="text-xs text-gray-400 mt-1">Средний чек: {{ formatNumber(stats.avg_expense_per_member) }} {{ group?.currency }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
+        <div class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
           <p class="text-sm text-gray-500 mb-1">Участников</p>
-          <p class="text-2xl font-bold text-gray-900">{{ group?.users?.length || 0 }}</p>
+          <p class="text-2xl font-bold text-gray-900">{{ stats.member_count }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
+        <div class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
           <p class="text-sm text-gray-500 mb-1">Мои расходы</p>
-          <p class="text-2xl font-bold text-blue-600">{{ formatNumber(myTotal) }} {{ group?.currency }}</p>
+          <p class="text-2xl font-bold text-blue-600">{{ formatNumber(stats.user_expenses) }} {{ group?.currency }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm p-5">
+        <div class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
           <p class="text-sm text-gray-500 mb-1">Мой баланс</p>
-          <p :class="myBalance >= 0 ? 'text-2xl font-bold text-green-600' : 'text-2xl font-bold text-red-600'">
-            {{ myBalance >= 0 ? '+' : '' }}{{ formatNumber(myBalance) }} {{ group?.currency }}
+          <p :class="userStats.balance > 0 ? 'text-2xl font-bold text-green-600' : userStats.balance < 0 ? 'text-2xl font-bold text-red-600' : 'text-2xl font-bold text-gray-600'">
+            {{ userStats.balance > 0 ? '+' : '' }}{{ formatNumber(userStats.balance) }} {{ group?.currency }}
           </p>
+          <p class="text-xs text-gray-400 mt-1">
+            <span v-if="userStats.balance > 0">Вам должны {{ formatNumber(userStats.balance) }} {{ group?.currency }}</span>
+            <span v-else-if="userStats.balance < 0">Вы должны {{ formatNumber(Math.abs(userStats.balance)) }} {{ group?.currency }}</span>
+            <span v-else>Вы в расчете</span>
+          </p>
+        </div>
+      </div>
+
+      <div v-if="!loading && stats?.top_categories?.length" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Топ категорий расходов</h2>
+        <div class="space-y-4">
+          <div v-for="category in stats.top_categories" :key="category.category_name" class="flex items-center">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center mr-3" :style="{ backgroundColor: category.category_color + '20' }">
+              <span class="text-xl" :style="{ color: category.category_color }">{{ category.category_icon }}</span>
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between mb-1">
+                <span class="text-sm font-medium text-gray-900">{{ category.category_name }}</span>
+                <span class="text-sm font-bold text-gray-900">{{ formatNumber(category.total) }} {{ group?.currency }} ({{ category.percentage }}%)</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  class="h-2 rounded-full transition-all duration-300" 
+                  :style="{
+                    width: category.percentage + '%',
+                    backgroundColor: category.category_color
+                  }"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Динамика по месяцам -->
+      <div v-if="!loading && stats?.monthly_expenses?.length" class="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Динамика расходов</h2>
+        <div class="space-y-3">
+          <div v-for="month in stats.monthly_expenses" :key="month.month" class="flex items-center">
+            <div class="w-24 text-sm text-gray-600">{{ formatMonth(month.month) }}</div>
+            <div class="flex-1">
+              <div class="w-full bg-gray-200 rounded-full h-8">
+                <div 
+                  class="h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-end px-3 text-white text-sm font-medium"
+                  :style="{ width: getMonthPercentage(month.total) + '%' }"
+                >
+                  {{ formatNumber(month.total) }} {{ group?.currency }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -140,6 +193,7 @@
                       <span v-if="member.pivot?.role === 'owner'" class="ml-1 text-xs text-yellow-600">👑</span>
                       <span v-else-if="member.pivot?.role === 'admin'" class="ml-1 text-xs text-blue-600">⚡</span>
                     </p>
+                    <p class="text-xs text-gray-500">{{ member.email }}</p>
                   </div>
                 </div>
               </div>
@@ -213,55 +267,43 @@ import groupsApi from '../../js/api/groups'
 import expensesApi from '../../js/api/expenses'
 import ExpenseForm from '../../js/components/groups/ExpenseForm.vue'
 import InviteForm from '../../js/components/groups/InviteForm.vue'
+import { useAuth } from '../../js/composables/useAuth'
 import { useNotification } from '../../js/composables/useNotification'
 
 const router = useRouter()
 const route = useRoute()
+const { user } = useAuth()
+const { showSuccess, handleApiError } = useNotification()
 const groupId = route.params.groupId
-
-const notification = useNotification()
-const showSuccess = notification.showSuccess
-const showError = notification.showError
-const handleApiError = notification.handleApiError
 
 const group = ref(null)
 const expenses = ref([])
+const stats = ref(null)
+const userStats = ref({ balance: 0 })
 const loading = ref(false)
 const expensesLoading = ref(false)
-
-const showExpenseForm = ref(false)
-const showInviteForm = ref(false)
-const showLeaveConfirm = ref(false)
-
 const expenseLoading = ref(false)
 const expenseError = ref('')
 const inviteLoading = ref(false)
 const inviteError = ref('')
 const leaveLoading = ref(false)
-
-const totalExpenses = computed(() => {
-  return expenses.value.reduce((sum, exp) => sum + exp.amount, 0)
-})
-
-const myTotal = computed(() => {
-  return expenses.value
-    .filter(exp => exp.payer_id === group.value?.current_user_id)
-    .reduce((sum, exp) => sum + exp.amount, 0)
-})
-
-const myBalance = computed(() => {
-  return 0
-})
-
-const membersCount = computed(() => {
-  return group.value?.users?.length || 0
-})
+const showExpenseForm = ref(false)
+const showInviteForm = ref(false)
+const showLeaveConfirm = ref(false)
 
 const loadGroupData = async () => {
   loading.value = true
   try {
-    const response = await groupsApi.getGroup(groupId)
-    group.value = response.data || response
+    const [groupResponse, statsResponse] = await Promise.all([
+      groupsApi.getGroup(groupId),
+      groupsApi.getGroupStats(groupId)
+    ])
+    
+    group.value = groupResponse.data || groupResponse
+    stats.value = statsResponse.data || statsResponse
+    
+    const userStatsResponse = await groupsApi.getMemberStats(groupId, user.value.id)
+    userStats.value = userStatsResponse.data || userStatsResponse
   } catch (err) {
     handleApiError(err, 'Ошибка загрузки данных группы')
   } finally {
@@ -270,31 +312,13 @@ const loadGroupData = async () => {
 }
 
 const loadExpenses = async () => {
-  console.log('📥 Начало загрузки расходов для группы:', groupId)
   expensesLoading.value = true
   try {
-    console.log('📡 Отправка запроса к API...')
     const response = await expensesApi.getGroupExpenses(groupId)
-    console.log('✅ API ответ получен:', response)
-    console.log('📊 Структура ответа:', {
-      hasData: !!response.data,
-      dataType: typeof response.data,
-      isArray: Array.isArray(response.data),
-      responseKeys: Object.keys(response)
-    })
-    
     expenses.value = response.data || response
-    console.log('📦 Установлены expenses:', expenses.value)
   } catch (err) {
-    console.error('❌ Ошибка загрузки расходов:')
-    console.error('   Статус:', err.response?.status)
-    console.error('   Данные ошибки:', err.response?.data)
-    console.error('   Заголовки:', err.response?.headers)
-    console.error('   Полная ошибка:', err)
-    
     handleApiError(err, 'Ошибка загрузки расходов')
   } finally {
-    console.log('🏁 Загрузка расходов завершена')
     expensesLoading.value = false
   }
 }
@@ -305,7 +329,7 @@ const handleCreateExpense = async (expenseData) => {
   try {
     await expensesApi.createExpense(groupId, expenseData)
     showExpenseForm.value = false
-    await loadExpenses()
+    await Promise.all([loadExpenses(), loadGroupData()])
     showSuccess('Расход успешно добавлен')
   } catch (err) {
     expenseError.value = err.response?.data?.message || 'Ошибка создания расхода'
@@ -356,6 +380,19 @@ const formatNumber = (num) => {
 const formatDate = (date) => {
   if (!date) return ''
   return new Date(date).toLocaleDateString('ru-RU')
+}
+
+const formatMonth = (monthStr) => {
+  if (!monthStr) return ''
+  const [year, month] = monthStr.split('-')
+  const date = new Date(year, month - 1, 1)
+  return date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
+}
+
+const getMonthPercentage = (total) => {
+  if (!stats.value?.monthly_expenses?.length) return 0
+  const maxTotal = Math.max(...stats.value.monthly_expenses.map(m => m.total))
+  return maxTotal > 0 ? (total / maxTotal) * 100 : 0
 }
 
 const getCategoryIcon = (category) => {
