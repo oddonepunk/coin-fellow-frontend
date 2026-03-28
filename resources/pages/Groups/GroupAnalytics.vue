@@ -54,7 +54,6 @@
           </div>
         </div>
 
-        <!-- График тренда расходов -->
         <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-lg font-bold text-gray-900">Динамика расходов</h2>
@@ -62,7 +61,7 @@
               <button
                 v-for="trendPeriod in ['week', 'month', 'year']"
                 :key="trendPeriod"
-                @click="trendPeriod = period"
+                @click="selectedTrendPeriod = trendPeriod"
                 class="px-3 py-1 text-sm rounded-lg transition-colors"
                 :class="selectedTrendPeriod === trendPeriod ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'"
               >
@@ -70,73 +69,46 @@
               </button>
             </div>
           </div>
-          <div class="h-80 flex items-center justify-center text-gray-400">
-            График будет здесь (можно добавить Chart.js или ECharts)
+          <div class="h-80">
+            <LineChart
+              v-if="spendingTrend.length"
+              :data="spendingTrend"
+              :currency="group?.currency"
+            />
+            <div v-else class="h-full flex items-center justify-center text-gray-400">
+              Нет данных для отображения
+            </div>
           </div>
         </div>
 
-        <!-- Расходы по категориям -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <div class="bg-white rounded-xl shadow-sm p-6">
             <h2 class="text-lg font-bold text-gray-900 mb-4">Расходы по категориям</h2>
             <div v-if="categoryBreakdown.length === 0" class="text-center py-8 text-gray-500">
               Нет данных по категориям
             </div>
-            <div v-else class="space-y-4">
-              <div v-for="cat in categoryBreakdown" :key="cat.category_id" class="flex items-center">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="{ backgroundColor: cat.color + '20' }">
-                  <span class="text-lg" :style="{ color: cat.color }">{{ cat.icon }}</span>
-                </div>
-                <div class="flex-1">
-                  <div class="flex justify-between mb-1">
-                    <span class="text-sm font-medium text-gray-900">{{ cat.category_name }}</span>
-                    <span class="text-sm font-bold text-gray-900">{{ formatNumber(cat.total) }} {{ group?.currency }}</span>
-                  </div>
-                  <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      class="h-2 rounded-full transition-all duration-300"
-                      :style="{
-                        width: cat.percentage + '%',
-                        backgroundColor: cat.color
-                      }"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PieChart
+              v-else
+              :data="categoryBreakdown"
+              :currency="group?.currency"
+            />
           </div>
 
-          <!-- Сравнение участников -->
           <div class="bg-white rounded-xl shadow-sm p-6">
             <h2 class="text-lg font-bold text-gray-900 mb-4">Кто сколько потратил</h2>
             <div v-if="userComparison.length === 0" class="text-center py-8 text-gray-500">
               Нет данных по участникам
             </div>
-            <div v-else class="space-y-3">
-              <div v-for="user in userComparison" :key="user.user_id" class="flex items-center">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold mr-3">
-                  {{ getUserInitials(user) }}
-                </div>
-                <div class="flex-1">
-                  <div class="flex justify-between mb-1">
-                    <span class="text-sm font-medium text-gray-900">{{ user.user_name }}</span>
-                    <span class="text-sm font-bold" :class="user.total > 0 ? 'text-blue-600' : 'text-gray-500'">
-                      {{ formatNumber(user.total) }} {{ group?.currency }}
-                    </span>
-                  </div>
-                  <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      class="h-2 rounded-full bg-blue-500 transition-all duration-300"
-                      :style="{ width: user.percentage + '%' }"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <BarChart
+              v-else
+              :data="userComparison"
+              :currency="group?.currency"
+              x-key="user_name"
+              y-key="total"
+            />
           </div>
         </div>
 
-        <!-- Сравнение периодов -->
         <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
           <h2 class="text-lg font-bold text-gray-900 mb-4">Сравнение периодов</h2>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -167,11 +139,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import groupsApi from '../../js/api/groups'
 import analyticsApi from '../../js/api/analytics'
 import { useNotification } from '../../js/composables/useNotification'
+import LineChart from '../../js/components/charts/LineChart.vue'
+import PieChart from '../../js/components/charts/PieChart.vue'
+import BarChart from '../../js/components/charts/BarChart.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -183,6 +158,7 @@ const analytics = ref(null)
 const categoryBreakdown = ref([])
 const userComparison = ref([])
 const periodComparison = ref(null)
+const spendingTrend = ref([])
 const loading = ref(false)
 const selectedPeriod = ref('month')
 const selectedTrendPeriod = ref('month')
@@ -196,6 +172,17 @@ const loadGroup = async () => {
   }
 }
 
+const loadSpendingTrend = async () => {
+  try {
+    const response = await analyticsApi.getSpendingTrend(groupId, selectedTrendPeriod.value)
+    spendingTrend.value = response.data || response
+    console.log('Тренд расходов:', spendingTrend.value)
+  } catch (err) {
+    console.error('Ошибка загрузки тренда:', err.response?.data)
+    handleApiError(err, 'Ошибка загрузки тренда расходов')
+  }
+}
+
 const loadAnalytics = async () => {
   loading.value = true
   try {
@@ -203,7 +190,7 @@ const loadAnalytics = async () => {
       analyticsApi.getGroupAnalytics(groupId),
       analyticsApi.getCategoryBreakdown(groupId),
       analyticsApi.getUserSpendingComparison(groupId),
-      analyticsApi.getPeriodComparison(groupId, selectedPeriod.value, 'previous')
+      analyticsApi.getPeriodComparison(groupId, selectedPeriod.value)
     ])
     
     analytics.value = analyticsData.data || analyticsData
@@ -219,6 +206,7 @@ const loadAnalytics = async () => {
 
 const refreshData = () => {
   loadAnalytics()
+  loadSpendingTrend()
 }
 
 const goBack = () => {
@@ -249,8 +237,13 @@ watch(selectedPeriod, () => {
   loadAnalytics()
 })
 
+watch(selectedTrendPeriod, () => {
+  loadSpendingTrend()
+})
+
 onMounted(() => {
   loadGroup()
   loadAnalytics()
+  loadSpendingTrend()
 })
 </script>
