@@ -1,103 +1,119 @@
 <template>
-  <div class="bg-white rounded-xl shadow-sm p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-bold text-gray-900">{{ title }}</h3>
-      <div class="flex space-x-2">
-        <button
-          v-for="period in periods"
-          :key="period.value"
-          @click="$emit('change-period', period.value)"
-          class="px-3 py-1 text-sm rounded-lg transition-colors"
-          :class="selectedPeriod === period.value ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'"
-        >
-          {{ period.label }}
-        </button>
-      </div>
-    </div>
-    
-    <div class="h-80">
-      <BaseChart
-        v-if="chartData"
-        type="line"
-        :data="chartData"
-        :options="chartOptions"
-      />
-      <div v-else class="h-full flex items-center justify-center text-gray-400">
-        Нет данных для отображения
-      </div>
-    </div>
+  <div class="w-full h-full">
+    <canvas ref="chartCanvas" class="w-full h-full"></canvas>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import BaseChart from './BaseChart.vue'
+import { ref, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
+import { Chart as ChartJS, registerables } from 'chart.js'
+
+ChartJS.register(...registerables)
 
 const props = defineProps({
-  title: {
-    type: String,
-    default: 'Динамика расходов'
-  },
   data: {
     type: Array,
-    default: () => []
+    required: true
   },
-  selectedPeriod: {
+  currency: {
     type: String,
-    default: 'month'
+    default: 'RUB'
   }
 })
 
-defineEmits(['change-period'])
+const chartCanvas = ref(null)
+let chart = null
 
-const periods = [
-  { value: 'week', label: 'Неделя' },
-  { value: 'month', label: 'Месяц' },
-  { value: 'year', label: 'Год' }
-]
+const formatDate = (dateStr) => {
+  const date = new Date(dateStr)
+  return `${date.getDate()}.${date.getMonth() + 1}`
+}
 
-const chartData = computed(() => {
-  if (!props.data.length) return null
+const createChart = async () => {
+  await nextTick()
+  if (!chartCanvas.value || !props.data.length) return
   
-  return {
-    labels: props.data.map(item => item.date || item.month),
-    datasets: [
-      {
-        label: 'Расходы',
-        data: props.data.map(item => item.total),
-        borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#3B82F6',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      }
-    ]
+  if (chart) {
+    chart.destroy()
   }
-})
-/* */
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    tooltip: {
-      callbacks: {
-        label: (context) => {
-          return `${context.raw.toLocaleString('ru-RU')} ₽`
+  
+  const ctx = chartCanvas.value.getContext('2d')
+  
+  chart = new ChartJS(ctx, {
+    type: 'line',
+    data: {
+      labels: props.data.map(item => formatDate(item.date || item.month)),
+      datasets: [
+        {
+          label: 'Расходы',
+          data: props.data.map(item => item.total),
+          borderColor: '#3B82F6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#3B82F6',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: { family: 'Inter, sans-serif', size: 12 }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              return `${context.raw.toLocaleString('ru-RU')} ${props.currency}`
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: (value) => `${value.toLocaleString('ru-RU')} ${props.currency}`,
+            font: { size: 11 }
+          },
+          grid: {
+            color: '#E5E7EB'
+          }
+        },
+        x: {
+          ticks: {
+            font: { size: 11 },
+            maxRotation: 45,
+            minRotation: 45
+          },
+          grid: {
+            display: false
+          }
         }
       }
     }
-  },
-  scales: {
-    y: {
-      ticks: {
-        callback: (value) => `${value.toLocaleString('ru-RU')} ₽`
-      }
-    }
-  }
+  })
 }
+
+onMounted(() => {
+  createChart()
+})
+
+watch(() => props.data, () => {
+  createChart()
+}, { deep: true })
+
+onBeforeUnmount(() => {
+  if (chart) {
+    chart.destroy()
+  }
+})
 </script>

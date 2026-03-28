@@ -1,80 +1,116 @@
 <template>
-  <div class="bg-white rounded-xl shadow-sm p-6">
-    <h3 class="text-lg font-bold text-gray-900 mb-4">{{ title }}</h3>
-    
-    <div class="h-80">
-      <BaseChart
-        v-if="chartData"
-        type="bar"
-        :data="chartData"
-        :options="chartOptions"
-      />
-      <div v-else class="h-full flex items-center justify-center text-gray-400">
-        Нет данных для отображения
-      </div>
-    </div>
+  <div class="w-full h-full">
+    <canvas ref="chartCanvas" class="w-full h-full"></canvas>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import BaseChart from './BaseChart.vue'
+import { ref, onMounted, watch, onBeforeUnmount, computed, nextTick } from 'vue'
+import { Chart as ChartJS, registerables } from 'chart.js'
+
+ChartJS.register(...registerables)
 
 const props = defineProps({
-  title: {
-    type: String,
-    default: 'Сравнение расходов'
-  },
   data: {
     type: Array,
-    default: () => []
+    required: true
+  },
+  currency: {
+    type: String,
+    default: 'RUB'
   },
   xKey: {
     type: String,
-    default: 'user_name'
+    default: 'label'
   },
   yKey: {
     type: String,
-    default: 'total'
+    default: 'value'
   }
 })
 
-const chartData = computed(() => {
-  if (!props.data.length) return null
+const chartCanvas = ref(null)
+let chart = null
+
+const createChart = async () => {
+  await nextTick()
+  if (!chartCanvas.value || !props.data.length) return
   
-  return {
-    labels: props.data.map(item => item[props.xKey]),
-    datasets: [
-      {
-        label: 'Расходы',
-        data: props.data.map(item => item[props.yKey]),
-        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-        borderRadius: 8,
-        barPercentage: 0.7,
-        categoryPercentage: 0.8
-      }
-    ]
+  if (chart) {
+    chart.destroy()
   }
-})
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    tooltip: {
-      callbacks: {
-        label: (context) => {
-          return `${context.raw.toLocaleString('ru-RU')} ₽`
+  
+  const ctx = chartCanvas.value.getContext('2d')
+  
+  chart = new ChartJS(ctx, {
+    type: 'bar',
+    data: {
+      labels: props.data.map(item => item[props.xKey]),
+      datasets: [
+        {
+          label: 'Расходы',
+          data: props.data.map(item => item[props.yKey]),
+          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+          borderRadius: 8,
+          barPercentage: 0.7,
+          categoryPercentage: 0.8
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: { family: 'Inter, sans-serif', size: 12 }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              return `${context.raw.toLocaleString('ru-RU')} ${props.currency}`
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: (value) => `${value.toLocaleString('ru-RU')} ${props.currency}`,
+            font: { size: 11 }
+          },
+          grid: {
+            color: '#E5E7EB'
+          }
+        },
+        x: {
+          ticks: {
+            font: { size: 11 },
+            maxRotation: 45,
+            minRotation: 45
+          },
+          grid: {
+            display: false
+          }
         }
       }
     }
-  },
-  scales: {
-    y: {
-      ticks: {
-        callback: (value) => `${value.toLocaleString('ru-RU')} ₽`
-      }
-    }
-  }
+  })
 }
+
+onMounted(() => {
+  createChart()
+})
+
+watch(() => props.data, () => {
+  createChart()
+}, { deep: true })
+
+onBeforeUnmount(() => {
+  if (chart) {
+    chart.destroy()
+  }
+})
 </script>
