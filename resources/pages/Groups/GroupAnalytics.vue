@@ -36,100 +36,146 @@
 
       <div v-else>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div class="bg-white rounded-xl shadow-sm p-5">
-            <p class="text-sm text-gray-500 mb-1">Всего расходов</p>
-            <p class="text-2xl font-bold text-gray-900">{{ formatNumber(analytics?.total_expenses || 0) }} {{ group?.currency }}</p>
+          <div class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 mb-1">Всего расходов</p>
+                <p class="text-2xl font-bold text-gray-900">{{ formatNumber(analytics?.total_expenses || 0) }} {{ group?.currency }}</p>
+              </div>
+              <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
           </div>
-          <div class="bg-white rounded-xl shadow-sm p-5">
-            <p class="text-sm text-gray-500 mb-1">Средний расход</p>
-            <p class="text-2xl font-bold text-gray-900">{{ formatNumber(analytics?.avg_expense || 0) }} {{ group?.currency }}</p>
+          <div class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 mb-1">Средний расход</p>
+                <p class="text-2xl font-bold text-gray-900">{{ formatNumber(analytics?.avg_expense || 0) }} {{ group?.currency }}</p>
+              </div>
+              <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+              </svg>
+            </div>
           </div>
-          <div class="bg-white rounded-xl shadow-sm p-5">
-            <p class="text-sm text-gray-500 mb-1">Максимальный расход</p>
-            <p class="text-2xl font-bold text-blue-600">{{ formatNumber(analytics?.max_expense || 0) }} {{ group?.currency }}</p>
+          <div class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 mb-1">Максимальный расход</p>
+                <p class="text-2xl font-bold text-blue-600">{{ formatNumber(analytics?.max_expense || 0) }} {{ group?.currency }}</p>
+              </div>
+              <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+              </svg>
+            </div>
           </div>
-          <div class="bg-white rounded-xl shadow-sm p-5">
-            <p class="text-sm text-gray-500 mb-1">Количество расходов</p>
-            <p class="text-2xl font-bold text-purple-600">{{ analytics?.total_count || 0 }}</p>
+          <div class="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-500 mb-1">Количество расходов</p>
+                <p class="text-2xl font-bold text-purple-600">{{ analytics?.total_count || 0 }}</p>
+              </div>
+              <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+            </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-lg font-bold text-gray-900">Динамика расходов</h2>
-            <div class="flex space-x-2">
-              <button
-                v-for="trendPeriod in ['week', 'month', 'year']"
-                :key="trendPeriod"
-                @click="selectedTrendPeriod = trendPeriod"
-                class="px-3 py-1 text-sm rounded-lg transition-colors"
-                :class="selectedTrendPeriod === trendPeriod ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'"
-              >
-                {{ trendPeriod === 'week' ? 'Неделя' : trendPeriod === 'month' ? 'Месяц' : 'Год' }}
-              </button>
-            </div>
-          </div>
-          <div class="h-80">
-            <LineChart
-              v-if="spendingTrend.length"
-              :data="spendingTrend"
-              :currency="group?.currency"
-            />
-            <div v-else class="h-full flex items-center justify-center text-gray-400">
-              Нет данных для отображения
-            </div>
-          </div>
-        </div>
+        <ChartSwitcher
+          title="Динамика расходов"
+          :line-data="spendingTrend"
+          :bar-data="spendingTrend"
+          :pie-data="categoryBreakdown"
+          :currency="group?.currency"
+        />
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
           <div class="bg-white rounded-xl shadow-sm p-6">
-            <h2 class="text-lg font-bold text-gray-900 mb-4">Расходы по категориям</h2>
-            <div v-if="categoryBreakdown.length === 0" class="text-center py-8 text-gray-500">
-              Нет данных по категориям
-            </div>
-            <PieChart
-              v-else
-              :data="categoryBreakdown"
-              :currency="group?.currency"
-            />
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm p-6">
-            <h2 class="text-lg font-bold text-gray-900 mb-4">Кто сколько потратил</h2>
+            <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+              <span class="mr-2">📊</span> Сравнение участников
+            </h2>
             <div v-if="userComparison.length === 0" class="text-center py-8 text-gray-500">
               Нет данных по участникам
             </div>
-            <BarChart
-              v-else
-              :data="userComparison"
-              :currency="group?.currency"
-              x-key="user_name"
-              y-key="total"
-            />
+            <div v-else class="space-y-3">
+              <div v-for="user in userComparison.slice(0, 5)" :key="user.user_id" class="flex items-center group hover:bg-gray-50 p-2 rounded-lg transition-colors">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold mr-3 shadow-sm">
+                  {{ getUserInitials(user) }}
+                </div>
+                <div class="flex-1">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm font-medium text-gray-900">{{ user.user_name }}</span>
+                    <span class="text-sm font-bold text-blue-600">{{ formatNumber(user.total) }} {{ group?.currency }}</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      class="h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300"
+                      :style="{ width: user.percentage + '%' }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <div v-if="userComparison.length > 5" class="text-center pt-2">
+                <button class="text-sm text-blue-600 hover:text-blue-700">Показать всех →</button>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <h2 class="text-lg font-bold text-gray-900 mb-4">Сравнение периодов</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="p-4 bg-gray-50 rounded-lg text-center">
-              <p class="text-sm text-gray-500 mb-1">Текущий период</p>
-              <p class="text-xl font-bold text-gray-900">{{ formatNumber(periodComparison?.current?.total || 0) }} {{ group?.currency }}</p>
-              <p class="text-xs text-gray-400">{{ periodComparison?.current?.count || 0 }} расходов</p>
-            </div>
-            <div class="p-4 bg-gray-50 rounded-lg text-center">
-              <p class="text-sm text-gray-500 mb-1">Предыдущий период</p>
-              <p class="text-xl font-bold text-gray-900">{{ formatNumber(periodComparison?.previous?.total || 0) }} {{ group?.currency }}</p>
-              <p class="text-xs text-gray-400">{{ periodComparison?.previous?.count || 0 }} расходов</p>
-            </div>
-            <div class="p-4 bg-gray-50 rounded-lg text-center">
-              <p class="text-sm text-gray-500 mb-1">Изменение</p>
-              <p :class="periodComparison?.change > 0 ? 'text-red-600' : periodComparison?.change < 0 ? 'text-green-600' : 'text-gray-600'" class="text-xl font-bold">
-                {{ periodComparison?.change > 0 ? '+' : '' }}{{ periodComparison?.change || 0 }}%
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ periodComparison?.change > 0 ? '↑ рост' : periodComparison?.change < 0 ? '↓ снижение' : 'без изменений' }}
-              </p>
+          <div class="bg-white rounded-xl shadow-sm p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+              <span class="mr-2">📈</span> Сравнение периодов
+            </h2>
+            <div class="grid grid-cols-1 gap-4">
+              <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="text-sm text-gray-500 mb-1">Текущий период</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ formatNumber(periodComparison?.current?.total || 0) }} {{ group?.currency }}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{ periodComparison?.current?.count || 0 }} расходов</p>
+                  </div>
+                  <div class="text-right">
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="text-sm text-gray-500 mb-1">Предыдущий период</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ formatNumber(periodComparison?.previous?.total || 0) }} {{ group?.currency }}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{ periodComparison?.previous?.count || 0 }} расходов</p>
+                  </div>
+                  <div class="text-right">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white border-2 border-gray-100 rounded-xl p-4 text-center">
+                <p class="text-sm text-gray-500 mb-2">Динамика</p>
+                <div class="flex items-center justify-center space-x-2">
+                  <svg v-if="periodComparison?.change > 0" class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                  </svg>
+                  <svg v-else-if="periodComparison?.change < 0" class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                  <span :class="periodComparison?.change > 0 ? 'text-red-600' : periodComparison?.change < 0 ? 'text-green-600' : 'text-gray-600'" class="text-2xl font-bold">
+                    {{ periodComparison?.change > 0 ? '+' : '' }}{{ periodComparison?.change || 0 }}%
+                  </span>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">
+                  {{ periodComparison?.change > 0 ? 'Расходы выросли' : periodComparison?.change < 0 ? 'Расходы снизились' : 'Без изменений' }}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -139,14 +185,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import groupsApi from '../../js/api/groups'
 import analyticsApi from '../../js/api/analytics'
 import { useNotification } from '../../js/composables/useNotification'
-import LineChart from '../../js/components/charts/LineChart.vue'
-import PieChart from '../../js/components/charts/PieChart.vue'
-import BarChart from '../../js/components/charts/BarChart.vue'
+import ChartSwitcher from '../../js/components/charts/ChartSwitcher.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -161,7 +205,6 @@ const periodComparison = ref(null)
 const spendingTrend = ref([])
 const loading = ref(false)
 const selectedPeriod = ref('month')
-const selectedTrendPeriod = ref('month')
 
 const loadGroup = async () => {
   try {
@@ -174,11 +217,9 @@ const loadGroup = async () => {
 
 const loadSpendingTrend = async () => {
   try {
-    const response = await analyticsApi.getSpendingTrend(groupId, selectedTrendPeriod.value)
+    const response = await analyticsApi.getSpendingTrend(groupId, selectedPeriod.value)
     spendingTrend.value = response.data || response
-    console.log('Тренд расходов:', spendingTrend.value)
   } catch (err) {
-    console.error('Ошибка загрузки тренда:', err.response?.data)
     handleApiError(err, 'Ошибка загрузки тренда расходов')
   }
 }
@@ -235,9 +276,6 @@ const getUserInitials = (user) => {
 
 watch(selectedPeriod, () => {
   loadAnalytics()
-})
-
-watch(selectedTrendPeriod, () => {
   loadSpendingTrend()
 })
 
