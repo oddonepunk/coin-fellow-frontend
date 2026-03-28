@@ -23,10 +23,20 @@ export default {
     return response.data
   },
 
-  async getPeriodComparison(groupId, period1, period2) {
+  async getPeriodComparison(groupId, period = 'month') {
     const response = await apiClient.get(`/analytics/groups/${groupId}/period-comparison`, {
-      params: { period1, period2 }
+      params: { period }
     })
+    return response.data
+  },
+
+  async getExpenseDistribution(groupId) {
+    const response = await apiClient.get(`/analytics/groups/${groupId}/expense-distribution`)
+    return response.data
+  },
+
+  async getTopSpendingCategories(groupId) {
+    const response = await apiClient.get(`/analytics/groups/${groupId}/top-categories`)
     return response.data
   }
 }
